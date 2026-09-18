@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glass Feedback — demo harness</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 16px/1.6 system-ui, -apple-system, sans-serif; }
+      .hero {
+        padding: 60px 8vw;
+        background: linear-gradient(120deg, #6366f1, #2dd4bf 70%);
+        color: #fff;
+      }
+      .hero h1 { font-size: 42px; margin: 0 0 8px; }
+      .light { background: #f6f7f9; color: #15171c; padding: 48px 8vw; }
+      .dark { background: #0d1016; color: #e8eaf0; padding: 48px 8vw; }
+      .photo {
+        height: 320px;
+        background: url("https://picsum.photos/1200/600") center/cover, #333;
+      }
+      .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .card { padding: 18px; border-radius: 12px; background: rgba(127,127,127,0.12); }
+      code { background: rgba(127,127,127,0.2); padding: 2px 6px; border-radius: 5px; }
+    </style>
+    <script>
+      // ---- Minimal chrome.* stub so the real content script runs over HTTP ----
+      const listeners = [];
+      function fakeCapture() {
+        const c = document.createElement("canvas");
+        c.width = window.innerWidth;
+        c.height = window.innerHeight;
+        const g = c.getContext("2d").createLinearGradient(0, 0, c.width, c.height);
+        g.addColorStop(0, "#6366f1");
+        g.addColorStop(1, "#2dd4bf");
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, c.width, c.height);
+        return c.toDataURL("image/png");
+      }
+      window.chrome = {
+        runtime: {
+          lastError: undefined,
+          onMessage: { addListener: (fn) => listeners.push(fn) },
+          sendMessage: (msg, cb) => {
+            if (msg.type === "GFX_CAPTURE_VISIBLE") cb({ ok: true, dataUrl: fakeCapture() });
+            else if (msg.type === "GFX_DOWNLOAD") { console.log("download:", msg.filename); cb({ ok: true, id: 1 }); }
+            else cb && cb({});
+          },
+          // served from project root: /content/content.css
+          getURL: (p) => "/" + p,
+        },
+      };
+      window.__fireToggle = () =>
+        listeners.forEach((fn) => fn({ type: "GFX_TOGGLE_UI" }, {}, () => {}));
+    </script>
+  </head>
+  <body>
+    <section class="hero">
+      <h1>Glass Feedback</h1>
+      <p>A demo page with light, dark, and photographic regions so the glass UI
+        can be judged over unpredictable backgrounds.</p>
+    </section>
+    <section class="light">
+      <h2>Light region</h2>
+      <div class="cols">
+        <div class="card"><p>Frosted glass should stay legible here. Try the
+          <code>select</code> tool to crop, and the <code>type</code> tool to drop a note.</p></div>
+        <div class="card"><p>Notes are solid + eye-friendly (dark or light), per spec —
+          not glass — so the text you write stays crisp.</p></div>
+      </div>
+    </section>
+    <div class="photo"></div>
+    <section class="dark">
+      <h2>Dark region</h2>
+      <p>The pill is edge-pinned and draggable. Tap it to expand into the tool row.
+        The toolbar carries the full glass treatment (sheen, rim, grain, subtle refraction).</p>
+    </section>
+
+    <!-- Load the REAL content script -->
+    <script src="/content/content.js"></script>
+    <script>
+      // Orchestrate a representative state for screenshots.
+      window.addEventListener("load", () => {
+        window.__fireToggle(); // enable UI (async: fetches CSS)
+        const wait = setInterval(() => {
+          const host = document.getElementById("gfx-host");
+          const sr = host && host.shadowRoot;
+          const bar = sr && sr.querySelector(".gfx-toolbar");
+          if (!bar) return;
+          clearInterval(wait);
+          // expand the tool row
+          bar.classList.remove("gfx-collapsed");
+          // drop two notes (dark + light)
+          const place = sr.querySelector(".gfx-place-layer");
+          const drop = (x, y) =>
+            place.dispatchEvent(new PointerEvent("pointerdown", { button: 0, clientX: x, clientY: y, bubbles: true }));
+          drop(140, 360);
+          drop(520, 430);
+          const bodies = sr.querySelectorAll(".gfx-note-body");
+          if (bodies[0]) bodies[0].textContent = "Dark note — white text, eye-friendly.";
+          if (bodies[1]) {
+            bodies[1].textContent = "Light note — inverse theme.";
+            const lightNote = bodies[1].closest(".gfx-note");
+            lightNote.querySelector(".gfx-note-btn").click(); // flip theme
+          }
+          window.__ready = true;
+        }, 80);
+      });
+
+      // Simulate a pointer-drag selection (real browser_drag needs HTML5 DnD).
+      window.__simSelect = (x1, y1, x2, y2) => {
+        const sr = document.getElementById("gfx-host").shadowRoot;
+        sr.querySelector('[title="Select region"]').click();
+        const layer = sr.querySelector(".gfx-select-layer");
+        const ev = (t, x, y) =>
+          layer.dispatchEvent(
+            new PointerEvent(t, { button: 0, clientX: x, clientY: y, bubbles: true, pointerId: 1 })
+          );
+        ev("pointerdown", x1, y1);
+        ev("pointermove", x2, y2);
+        ev("pointerup", x2, y2);
+        return "ok";
+      };
+    </script>
+  </body>
+</html>

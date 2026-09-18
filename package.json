@@ -1,0 +1,8 @@
+{
+  "name": "glass-feedback-extension",
+  "private": true,
+  "scripts": {
+    "check": "node tools/check.mjs",
+    "generate-assets": "node tools/gen-icons.mjs && node tools/gen-lensmap.mjs"
+  }
+}

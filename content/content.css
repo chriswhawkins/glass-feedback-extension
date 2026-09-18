@@ -1,0 +1,678 @@
+/*
+ * Glass Feedback — in-page UI styles (injected into a Shadow DOM).
+ * Glass system follows the Aave "glass for the web" technique: frosted backdrop
+ * (blur+saturate) + layered specular / rim box-shadows + gradient hairline border
+ * + grain, plus an SVG lens refraction filter (see buildSvgDefs in content.js) on
+ * the toolbar and the liquid selection bubble.
+ */
+
+:host {
+  /* ---- geometry ---- */
+  --gfx-radius-pill: 999px;
+  --gfx-radius-card: 14px;
+  --gfx-border-w: 1px;
+
+  /* ---- glass backdrop ---- clearer + more saturated so the lens refraction
+     reads as transparent liquid glass, not opaque frost */
+  --gfx-blur: 7px;
+  --gfx-saturate: 185%;
+  --gfx-brightness: 110%;
+  --gfx-backdrop: blur(var(--gfx-blur)) saturate(var(--gfx-saturate))
+    brightness(var(--gfx-brightness));
+
+  /* ---- fill / tint ---- kept low so you see THROUGH the glass; legibility
+     comes from the rim/specular highlights + icon drop-shadows, not opacity */
+  --gfx-tint: rgba(38, 42, 52, 0.1);
+  --gfx-fg: rgba(255, 255, 255, 0.98);
+  --gfx-fg-dim: rgba(255, 255, 255, 0.88);
+  --gfx-solid: rgba(20, 24, 32, 0.96); /* fallback when no backdrop-filter */
+
+  /* ---- sheen (top-left diagonal light) ---- */
+  --gfx-sheen-strong: 0.35;
+  --gfx-sheen-soft: 0.1;
+
+  /* ---- edge / rim lighting ---- */
+  --gfx-edge-top: 0.55;
+  --gfx-edge-bottom: 0.22;
+  --gfx-rim-strong: 0.65;
+  --gfx-rim-soft: 0.25;
+  --gfx-rim-dark: 0.2;
+
+  /* ---- inner glow ---- */
+  --gfx-inner-glow: 0.12;
+  --gfx-inner-glow-blur: 24px;
+
+  /* ---- outer shadows ---- */
+  --gfx-shadow-ambient: 0.45;
+  --gfx-shadow-contact: 0.3;
+
+  /* ---- grain ---- */
+  --gfx-grain-opacity: 0.05;
+  --gfx-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+
+  /* ---- motion ---- */
+  --gfx-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --gfx-spring: cubic-bezier(0.34, 1.8, 0.5, 1); /* overshoot = bounce */
+  --gfx-dur: 240ms;
+  --gfx-dur-lg: 440ms;
+
+  /* ---- accents (rgb so we can vary alpha) ---- */
+  --gfx-accent: 139, 139, 255;
+  --gfx-accent-2: 70, 224, 200;
+  --gfx-active-fill: rgba(var(--gfx-accent), 0.3);
+
+  --gfx-z: 2147483646;
+
+  all: initial;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.gfx-svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.gfx-root {
+  position: static;
+}
+
+/* transparent click-catcher for placing text notes */
+.gfx-place-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--gfx-z);
+  display: none;
+  cursor: text;
+}
+.gfx-place-layer.gfx-on {
+  display: block;
+}
+
+/* ============================================================
+ * Reusable glass surface
+ * ============================================================ */
+.gfx-glass {
+  position: relative;
+  isolation: isolate;
+  /* layout only — `paint` would clip the drop shadows, focus rings, and the
+     liquid bubble's squash/stretch that extend beyond the box. */
+  contain: layout;
+  color: var(--gfx-fg);
+  -webkit-backdrop-filter: var(--gfx-backdrop);
+  backdrop-filter: var(--gfx-backdrop);
+  background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, var(--gfx-sheen-strong)) 0%,
+      rgba(255, 255, 255, var(--gfx-sheen-soft)) 28%,
+      rgba(255, 255, 255, 0) 55%
+    ),
+    linear-gradient(var(--gfx-tint), var(--gfx-tint));
+  background-blend-mode: screen, normal;
+  border: 0;
+  box-shadow: 0 8px 30px -8px rgba(0, 0, 0, var(--gfx-shadow-ambient)),
+    0 2px 8px -2px rgba(0, 0, 0, var(--gfx-shadow-contact)),
+    inset 0 1px 0 0 rgba(255, 255, 255, var(--gfx-edge-top)),
+    inset 0 1px 1px 0 rgba(255, 255, 255, calc(var(--gfx-edge-top) * 0.6)),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, var(--gfx-edge-bottom)),
+    inset 0 0 var(--gfx-inner-glow-blur) 0
+      rgba(255, 255, 255, var(--gfx-inner-glow));
+}
+/* gradient hairline rim (specular edge) */
+.gfx-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--gfx-border-w);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, var(--gfx-rim-strong)),
+    rgba(255, 255, 255, var(--gfx-rim-soft)) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(0, 0, 0, var(--gfx-rim-dark)) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+/* grain */
+.gfx-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--gfx-grain);
+  background-size: 140px 140px;
+  opacity: var(--gfx-grain-opacity);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 2;
+}
+.gfx-glass > * {
+  position: relative;
+  z-index: 3;
+}
+/* optional refraction on the hero surface (subtle) */
+.gfx-glass--refract {
+  -webkit-backdrop-filter: var(--gfx-backdrop) url(#gfx-refract);
+  backdrop-filter: var(--gfx-backdrop) url(#gfx-refract);
+}
+
+/* ============================================================
+ * Toolbar (pill -> tool row)
+ * ============================================================ */
+.gfx-toolbar {
+  position: fixed;
+  z-index: var(--gfx-z);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--gfx-radius-pill);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  transition: box-shadow var(--gfx-dur) var(--gfx-ease),
+    border-radius var(--gfx-dur) var(--gfx-ease);
+}
+.gfx-toolbar.gfx-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+/* open direction: row-reverse puts the pill on the right and grows the tool row
+   toward the left. Driven by pill position (set in applyPin), not just the edge —
+   so a top/bottom pin near the right side still opens toward screen center. */
+.gfx-toolbar.gfx-rev {
+  flex-direction: row-reverse;
+}
+
+.gfx-pill {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  color: var(--gfx-fg);
+  --gfx-edge-top: 0.65;
+  --gfx-inner-glow: 0.18;
+  background: radial-gradient(
+    120% 120% at 30% 25%,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0.04) 62%
+  );
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6),
+    inset 0 0 18px 0 rgba(255, 255, 255, 0.16),
+    0 2px 8px -2px rgba(0, 0, 0, 0.4);
+  /* transform is owned by JS spring physics (see content.js motion controller);
+     keep it off the CSS transition so the springs can overshoot freely. */
+  transform-origin: center;
+  will-change: transform;
+  transition: box-shadow var(--gfx-dur) var(--gfx-ease);
+}
+.gfx-toolbar.gfx-dragging .gfx-pill {
+  cursor: grabbing;
+}
+.gfx-pill:focus-visible {
+  outline: none;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6),
+    0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.9);
+}
+/* glyph sits clearly smaller than the bubble — the bubble is the hero */
+.gfx-pill svg {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.gfx-tools {
+  position: relative; /* containing block for the liquid bubble */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 680px;
+  overflow: visible;
+  transition: max-width var(--gfx-dur-lg) var(--gfx-spring),
+    opacity 0.2s ease, margin var(--gfx-dur-lg) var(--gfx-spring);
+}
+
+/* ---- liquid selection bubble (slides between tools on click) ---- */
+.gfx-liquid {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 72px;
+  height: 48px;
+  margin-top: -24px;
+  border-radius: 18px;
+  /* ON TOP of the buttons: the bubble is a lens, so its backdrop-filter refracts
+     and frosts the glyph painted beneath it (and the neutral toolbar surface),
+     rather than the raw page behind the bar. This is what distorts the icon. */
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transform-origin: center;
+  will-change: transform, opacity;
+  /* CLEAR glass body (source look): the center is essentially transparent — the
+     "glass" is the backdrop lens (blur + displacement), not a fill. Only a faint
+     top sheen + crisp rim/edges + a soft drop shadow give it form, so the
+     squash/stretch reads on the edges and the glyph refracts cleanly through. */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0) 45%
+  );
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    inset 0 -6px 10px -8px rgba(0, 0, 0, 0.18),
+    0 7px 16px -9px rgba(0, 0, 0, 0.34), 0 1px 2px rgba(0, 0, 0, 0.1);
+  /* No blur: the dark glyph is now a clean masked shape that tracks the bubble,
+     so it should stay crisp. The "glass" comes from the refraction lens (below) +
+     sheen/rim/shadow, not from frosting the icon. */
+  -webkit-backdrop-filter: saturate(118%) brightness(108%);
+  backdrop-filter: saturate(118%) brightness(108%);
+}
+.gfx-liquid--refract {
+  -webkit-backdrop-filter: saturate(118%) brightness(108%) url(#gfx-refract);
+  backdrop-filter: saturate(118%) brightness(108%) url(#gfx-refract);
+}
+.gfx-toolbar.gfx-collapsed .gfx-tools {
+  max-width: 0;
+  opacity: 0;
+  margin: 0 -4px;
+  overflow: hidden;
+}
+/* staggered, springy entrance of each tool when the bar expands */
+@keyframes gfx-tool-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.gfx-toolbar:not(.gfx-collapsed) .gfx-tools > .gfx-btn,
+.gfx-toolbar:not(.gfx-collapsed) .gfx-tools > .gfx-sep {
+  animation: gfx-tool-in var(--gfx-dur-lg) var(--gfx-spring) backwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+.gfx-btn {
+  width: 72px;
+  height: 48px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  color: var(--gfx-fg-dim);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  position: relative;
+  z-index: 1; /* above the liquid bubble */
+  isolation: isolate;
+  transition: background-color 150ms var(--gfx-ease),
+    transform 140ms var(--gfx-ease), color 150ms var(--gfx-ease);
+}
+.gfx-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.18),
+    rgba(255, 255, 255, 0) 60%
+  );
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: -1;
+}
+/* No hover state (per the source clip). The only feedback is the liquid bubble
+   sliding over a tool — and the glass *darkens* the glyph beneath it, which is
+   the "active" look below. */
+.gfx-btn:active {
+  transform: scale(0.92);
+}
+/* dark "under the glass" glyph: a clone of the icon, dark, overlaid on top of the
+   bubble and positioned over each button (drawLiquid). It's hidden by default and
+   clipped to the bubble's footprint each frame, so the black is revealed/withdrawn
+   exactly where the glass is — it travels WITH the bubble shape instead of
+   snapping, and stays crisp since it sits above the refraction. */
+.gfx-glyph-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  /* fallback ink if the iridescent gradient ref can't resolve — a navy near-black
+     (not flat #000) so it already leans cooler than pure black. */
+  color: #1c2440;
+  pointer-events: none;
+  opacity: 0;
+  /* above the bubble (z-index 2) so the refraction lens never smears it — the
+     dark glyph reads crisp. Its box/position is set per-frame in drawLiquid. */
+  z-index: 3;
+  clip-path: inset(50% 50% 50% 50%);
+}
+.gfx-glyph-dark svg {
+  width: 24px;
+  height: 24px;
+}
+/* paint the strokes with the rotating, semi-transparent iridescent gradient
+   (defs #gfx-iris) — overrides each shape's stroke="currentColor". The alpha lets
+   the moving glass shimmer through, so the glyph feels alive, not flat black. */
+.gfx-glyph-dark svg :is(path, rect, circle, line) {
+  stroke: url(#gfx-iris);
+}
+.gfx-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.9);
+}
+.gfx-btn svg {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+  transition: filter 150ms var(--gfx-ease);
+}
+.gfx-sep {
+  width: 1px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.22);
+  flex: 0 0 auto;
+}
+
+/* ============================================================
+ * Selection overlay (4-panel blur keeps the crop crisp)
+ * ============================================================ */
+.gfx-select-layer {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--gfx-z) - 1);
+  pointer-events: none;
+  display: none;
+}
+.gfx-select-layer.gfx-on {
+  display: block;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+.gfx-mask {
+  position: absolute;
+  background: rgba(8, 10, 16, 0.3);
+  -webkit-backdrop-filter: blur(4px) brightness(0.85);
+  backdrop-filter: blur(4px) brightness(0.85);
+}
+.gfx-crop {
+  position: absolute;
+  border-radius: 6px;
+  outline: 1px solid rgba(255, 255, 255, 0.55);
+  outline-offset: -1px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 6px 20px rgba(0, 0, 0, 0.3);
+  cursor: move;
+}
+.gfx-crop[hidden] {
+  display: none;
+}
+.gfx-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.gfx-dim-hint {
+  position: absolute;
+  bottom: -28px;
+  left: 0;
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: 3px 9px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+ * Text annotation notes (SOLID, eye-friendly — per spec, not glass)
+ * ============================================================ */
+.gfx-annotations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: calc(var(--gfx-z) - 2);
+  pointer-events: none;
+}
+.gfx-note {
+  position: absolute;
+  min-width: 90px;
+  min-height: 38px;
+  width: 220px;
+  pointer-events: auto;
+  border-radius: var(--gfx-radius-card);
+  resize: both;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* eye-friendly dark (default) */
+  --note-bg: #23252c;
+  --note-fg: #f1f2f4;
+  box-shadow: 0 8px 28px -6px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.gfx-note.gfx-note-light {
+  /* eye-friendly light (inverse) */
+  --note-bg: #f4f1ea;
+  --note-fg: #23262d;
+}
+.gfx-note-body {
+  flex: 1;
+  padding: 9px 11px;
+  background: var(--note-bg);
+  color: var(--note-fg);
+  font-size: 14px;
+  line-height: 1.45;
+  outline: none;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  caret-color: var(--note-fg);
+}
+.gfx-note-body:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+}
+.gfx-note-body:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(var(--gfx-accent), 0.6);
+}
+.gfx-note-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--note-fg);
+  cursor: move;
+  font-size: 11px;
+  user-select: none;
+}
+.gfx-note-light .gfx-note-bar {
+  background: rgba(0, 0, 0, 0.08);
+}
+.gfx-note-spacer {
+  flex: 1;
+}
+.gfx-note-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+}
+.gfx-note-btn svg {
+  width: 15px;
+  height: 15px;
+}
+.gfx-note-btn:hover {
+  opacity: 1;
+  background: rgba(127, 127, 127, 0.25);
+}
+
+/* ============================================================
+ * Capture mode — hide all chrome, keep painted content
+ * ============================================================ */
+.gfx-capturing .gfx-toolbar,
+.gfx-capturing .gfx-select-layer,
+.gfx-capturing .gfx-place-layer,
+.gfx-capturing .gfx-menu,
+.gfx-capturing .gfx-toast {
+  display: none !important;
+}
+.gfx-capturing .gfx-note {
+  resize: none;
+}
+.gfx-capturing .gfx-note-bar {
+  display: none !important;
+}
+.gfx-capturing .gfx-note-body:empty {
+  display: none;
+}
+
+/* ============================================================
+ * Toast + save menu
+ * ============================================================ */
+.gfx-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%) translateY(10px);
+  z-index: var(--gfx-z);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--gfx-fg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.gfx-toast.gfx-on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.gfx-menu {
+  position: fixed;
+  z-index: var(--gfx-z);
+  padding: 6px;
+  border-radius: 14px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 196px;
+}
+.gfx-menu.gfx-on {
+  display: flex;
+}
+.gfx-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--gfx-fg);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+}
+.gfx-menu-item:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.gfx-menu-item svg {
+  width: 18px;
+  height: 18px;
+}
+.gfx-menu-label {
+  flex: 1;
+}
+.gfx-menu-sub {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gfx-fg-dim);
+  padding: 6px 10px 2px;
+}
+
+/* ============================================================
+ * Accessibility / capability fallbacks
+ * ============================================================ */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .gfx-glass {
+    background: var(--gfx-solid);
+  }
+  .gfx-glass::after {
+    display: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .gfx-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--gfx-solid);
+  }
+  .gfx-glass::after {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gfx-toolbar,
+  .gfx-tools,
+  .gfx-btn,
+  .gfx-pill,
+  .gfx-toast {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+@media (forced-colors: active) {
+  .gfx-glass {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+  .gfx-glass::before,
+  .gfx-glass::after {
+    display: none;
+  }
+  .gfx-btn:focus-visible,
+  .gfx-pill:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
