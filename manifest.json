@@ -21,8 +21,7 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["activeTab", "scripting", "downloads", "storage"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": ["activeTab", "downloads"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

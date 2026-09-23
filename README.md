@@ -53,6 +53,8 @@ npm run generate-assets  # only when changing an asset generator
 
 The same check runs in GitHub Actions on every push and pull request.
 
+See [PRIVACY.md](PRIVACY.md) for the extension's data-handling policy.
+
 The lens map is an RGBA displacement map (R = horizontal bend, G = vertical,
 gray = neutral) with a clear center and refraction ramped toward the rim — that
 is what gives the toolbar its real-glass lens edge. It's loaded at runtime and
