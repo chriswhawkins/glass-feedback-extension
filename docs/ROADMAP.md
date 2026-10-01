@@ -2,6 +2,8 @@
 
 The v0.2 implementation is ready for hands-on testing. Recorded checks are in
 [VERIFICATION.md](VERIFICATION.md); this is not a claim of support for every website.
+Those recorded results precede the latest liquid-glass and annotation-palette
+refinement. Browser verification of that refinement is pending.
 
 ## UX release checks
 
@@ -12,12 +14,22 @@ The v0.2 implementation is ready for hands-on testing. Recorded checks are in
   click captures with current settings; without a selection it asks for a
   region, then offers an explicit Capture button. Full page works with both
   destinations, and clipboard fallback is visible to the user.
-- **Flyouts:** hover opens options after a delay; users can move into the
-  flyout without it disappearing. Options open perpendicular to the toolbar,
-  remain inside the viewport at all edges/corners, and reflow on resize.
-- **Annotation session:** Note/Draw stays active after placement until closed
-  or switched. Notes and strokes keep document-coordinate anchors through
-  scrolling and viewport resize. Visibility toggles preserve annotations;
+- **Liquid-glass surface:** restoring the original glass personality is a
+  critical release gate. Primary `.gfx-pill`, mode alternative `.gfx-alternate`,
+  and mode options `.gfx-options` must read as one continuously expanding
+  `.gfx-surface`, with a CSS clip-path path, spring transform, and root
+  `.gfx-liquid` animated lens. Delayed hover options stay reachable, remain
+  inside the viewport at edges/corners, and reflow on resize. Verify the latest
+  silhouette, refraction, lens motion, and spring behavior in Chrome.
+- **Annotation session:** one editing mode keeps **Add notes**, **Draw**, and
+  **Annotation appearance** visible after the pointer leaves. Note/Draw switches
+  directly without main hover or ending the session. Hover appearance for
+  240 ms or click it to reveal **Erase drawing**, **Undo last drawing**,
+  **Light notes**, and **Annotation opacity** within the same palette. Escape/X
+  exits. Verify persistent and expanded palettes at narrow widths, including
+  quick tools after the mode bar closes. Notes and strokes keep
+  document-coordinate anchors through scrolling and viewport resize.
+  Visibility toggles preserve annotations;
   reload clears them. Captures include annotations without editing controls.
 - **Local preferences:** only scope, destination, annotation tool, note theme/transparency,
   and stroke transparency persist in `chrome.storage.local`. Reopen/reload

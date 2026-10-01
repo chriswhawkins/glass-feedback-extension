@@ -19,7 +19,7 @@
   const svg = (body) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
   const icons = {
-    camera: svg('<path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/>'),
+    camera: svg('<circle cx="12" cy="12" r="9.3"/><path class="gfx-aperture" d=""/>'),
     annotate: svg('<path d="m4 20 4-1L20 7l-3-3L5 16zM14 7l3 3"/>'),
     selection: svg('<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><rect x="7" y="7" width="10" height="10" rx="1"/>'),
     full: svg('<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6m-6 5h6m-6 5h6"/>'),
@@ -32,6 +32,7 @@
     close: svg('<path d="m6 6 12 12M6 18 18 6"/>'),
     trash: svg('<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6"/>'),
     undo: svg('<path d="m8 3-5 5 5 5M3 8h10a7 7 0 0 1 0 14"/>'),
+    settings: svg('<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>'),
   };
   const prefs = {
     scope: "selection", destination: "clipboard", tool: "text",
@@ -40,9 +41,12 @@
   const state = {
     enabled: false, mode: "camera", editing: false, selecting: false,
     capturing: false, sel: null, expanded: false, preview: "camera",
-    direction: "left", x: null, y: 120, dragging: false,
+    direction: "left", x: null, y: 120, dragging: false, details: false,
   };
   let host, shadow, root, toolbar, primary, alternate, exit, flyout, bubble;
+  let surface, rim, inkLayer, settingsTimer, branchBox, branchSide, branchAnchor;
+  let hoveredButton;
+  let pointerWithinUI = false;
   let annoLayer, drawingLayer, inputLayer, selectionLayer, crop, captureButton, toast;
   let buildPromise, toggleQueue = Promise.resolve();
   let openTimer, submenuTimer, closeTimer, toastTimer;
@@ -94,6 +98,16 @@
     host = el("div", { id: "gfx-host", popover: "manual" });
     shadow = host.attachShadow({ mode: "open" });
     shadow.adoptedStyleSheets = [sheet];
+    const spin = matchMedia("(prefers-reduced-motion: reduce)").matches ? "" :
+      '<animateTransform attributeName="gradientTransform" type="rotate" values="0 .5 .5;360 .5 .5" dur="11s" repeatCount="indefinite"/>';
+    shadow.append(el("div", { class: "gfx-svg-defs", html:
+      `<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"><defs>
+      <linearGradient id="gfx-iris" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#283561" stop-opacity=".92"/><stop offset=".42" stop-color="#3d2b62" stop-opacity=".78"/>
+      <stop offset=".72" stop-color="#272453" stop-opacity=".82"/><stop offset="1" stop-color="#16223c" stop-opacity=".92"/>${spin}</linearGradient>
+      <linearGradient id="gfx-rim" x1="0" y1="0" x2="1" y2="1"><stop stop-color="white" stop-opacity=".8"/>
+      <stop offset=".4" stop-color="white" stop-opacity=".25"/><stop offset=".65" stop-color="white" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#101722" stop-opacity=".3"/></linearGradient></defs></svg>` }));
     try {
       const response = await fetch(chrome.runtime.getURL("assets/lens-map.png"));
       if (!response.ok) throw new Error("Lens map unavailable");
@@ -108,7 +122,7 @@
         `<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"><defs>
         <filter id="gfx-refract" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
         <feImage href="${map}" preserveAspectRatio="none" result="map"/>
-        <feDisplacementMap in="SourceGraphic" in2="map" scale="36" xChannelSelector="R" yChannelSelector="G"/>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="52" xChannelSelector="R" yChannelSelector="G"/>
         </filter></defs></svg>` }));
     } catch (err) {
       // The base frosted surface remains usable if the decorative map fails.
@@ -121,7 +135,13 @@
     annoLayer.append(drawingLayer);
     inputLayer = el("div", { class: "gfx-place-layer", onpointerdown: annotatePointer });
     selectionLayer = buildSelection();
-    toolbar = el("div", { class: "gfx-toolbar gfx-glass", role: "toolbar", "aria-label": "Glass Feedback" });
+    surface = el("div", { class: "gfx-surface gfx-glass", "aria-hidden": "true" });
+    rim = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    rim.setAttribute("class", "gfx-surface-rim");
+    rim.setAttribute("aria-hidden", "true");
+    rim.innerHTML = '<path fill="none" stroke="url(#gfx-rim)" stroke-width="1.2"/>';
+    inkLayer = el("div", { class: "gfx-ink-layer", "aria-hidden": "true" });
+    toolbar = el("div", { class: "gfx-toolbar", role: "toolbar", "aria-label": "Glass Feedback" });
     primary = button("Capture selection to clipboard", "camera", primaryAction, {
       class: "gfx-btn gfx-pill", "aria-expanded": "false",
     });
@@ -136,10 +156,10 @@
       syncMode();
       closeMenus();
     }, { class: "gfx-btn gfx-exit", hidden: "" });
-    flyout = el("div", { class: "gfx-options gfx-glass", role: "group", hidden: "" });
-    toolbar.append(bubble, primary, alternate, exit);
+    flyout = el("div", { class: "gfx-options", role: "group", hidden: "" });
+    toolbar.append(primary, alternate, exit);
     toast = el("div", { class: "gfx-toast gfx-glass", role: "status", "aria-live": "polite" });
-    root.append(annoLayer, inputLayer, selectionLayer, toolbar, flyout, toast);
+    root.append(annoLayer, inputLayer, selectionLayer, surface, rim, toolbar, flyout, bubble, inkLayer, toast);
     shadow.append(root);
     document.documentElement.append(host);
     primary.addEventListener("pointerenter", enterPrimary);
@@ -154,12 +174,16 @@
       }
     });
     primary.addEventListener("pointerdown", dragToolbar);
+    for (const node of [primary, alternate]) {
+      node.addEventListener("pointerenter", () => moveBubble(node));
+      node.addEventListener("focus", () => moveBubble(node));
+    }
     for (const surface of [toolbar, flyout]) {
-      surface.addEventListener("pointerenter", cancelClose);
-      surface.addEventListener("pointerleave", scheduleClose);
+      surface.addEventListener("pointerenter", () => { pointerWithinUI = true; cancelClose(); });
+      surface.addEventListener("pointerleave", () => { pointerWithinUI = false; scheduleClose(); });
       surface.addEventListener("focusout", () => {
         setTimeout(() => {
-          if (!toolbar.contains(shadow.activeElement) && !flyout.contains(shadow.activeElement)) scheduleClose();
+          if (!pointerWithinUI && !toolbar.contains(shadow.activeElement) && !flyout.contains(shadow.activeElement)) scheduleClose();
         }, 0);
       });
     }
@@ -215,11 +239,13 @@
     moveBubble(anchor);
     if (!flyout.hidden && flyout.dataset.mode === mode) return;
     flyout.hidden = true;
+    wakeGlass();
     const open = () => {
       if (!state.expanded) return;
       buildOptions(mode);
       flyout.hidden = false;
       layoutOptions(anchor);
+      refreshInk();
     };
     if (immediate) open();
     else submenuTimer = setTimeout(open, HOVER_DELAY);
@@ -228,6 +254,7 @@
   function scheduleClose() {
     clearTimeout(openTimer);
     clearTimeout(submenuTimer);
+    clearTimeout(settingsTimer);
     cancelClose();
     closeTimer = setTimeout(closeMenus, CLOSE_DELAY);
   }
@@ -237,14 +264,31 @@
     cancelClose();
     state.expanded = false;
     alternate.hidden = true;
-    flyout.hidden = true;
+    state.details = false;
+    clearTimeout(settingsTimer);
+    if (state.editing && state.mode === "annotate") {
+      state.preview = "annotate";
+      buildOptions("annotate");
+      flyout.hidden = false;
+      layoutOptions(primary);
+    } else flyout.hidden = true;
     primary.setAttribute("aria-expanded", "false");
-    moveBubble(primary);
+    layout();
+    moveBubble(state.editing ? flyout.querySelector('[aria-pressed="true"]') || primary : primary);
+    refreshInk();
   }
   function moveBubble(target) {
-    bubble.style.transform = `translate(${target.offsetLeft}px, ${target.offsetTop}px)`;
-    primary.classList.toggle("gfx-hovered", target === primary);
-    alternate.classList.toggle("gfx-hovered", target === alternate);
+    if (!target || target.hidden || hoveredButton === target) return;
+    hoveredButton = target;
+    const r = target.getBoundingClientRect();
+    const dest = [r.left, r.top, r.right, r.bottom];
+    if (!glass.edges) glass.edges = [...dest];
+    const cx = (glass.edges[0] + glass.edges[2]) / 2;
+    const cy = (glass.edges[1] + glass.edges[3]) / 2;
+    glass.destination = dest;
+    glass.squeeze = 7; // anticipate, then release the leading edge before the tail
+    glass.targetEdges = [cx - 12, cy - 12, cx + 12, cy + 12];
+    wakeGlass();
   }
   function layout() {
     state.x = clamp(state.x ?? window.innerWidth - 84, MARGIN, window.innerWidth - 72 - MARGIN);
@@ -262,7 +306,8 @@
     alternate.style.left = clamp(state.x + 8 + offset[0], MARGIN, window.innerWidth - 56 - MARGIN) - state.x + "px";
     alternate.style.top = clamp(state.y + 8 + offset[1], MARGIN, window.innerHeight - 56 - MARGIN) - state.y + "px";
     if (!flyout.hidden) layoutOptions(state.preview === state.mode ? primary : alternate);
-    moveBubble(state.preview === state.mode || !state.expanded ? primary : alternate);
+    refreshInk();
+    wakeGlass();
   }
   function layoutOptions(anchor) {
     const horizontal = state.direction === "up" || state.direction === "down";
@@ -275,24 +320,30 @@
     // Constrain the perpendicular corridor before measuring. Narrow screens
     // may need wrapped options rather than clamping a menu over its trigger.
     flyout.style.maxWidth = horizontal ? Math.max(60,
-      Math.max(r.left - MARGIN - 8, window.innerWidth - MARGIN - r.right - 8)) + "px" : "";
+      Math.max(r.left - MARGIN, window.innerWidth - MARGIN - r.right)) + "px" : "";
     flyout.style.maxHeight = !horizontal ? Math.max(60,
-      Math.max(r.top - MARGIN - 8, window.innerHeight - MARGIN - r.bottom - 8)) + "px" : "";
+      Math.max(r.top - MARGIN, window.innerHeight - MARGIN - r.bottom)) + "px" : "";
     flyout.style.left = "0px";
     flyout.style.top = "0px";
     const size = { width: flyout.offsetWidth, height: flyout.offsetHeight };
     let x, y;
     if (horizontal) {
-      const right = r.right + 8;
-      x = right + size.width <= window.innerWidth - MARGIN ? right : r.left - 8 - size.width;
-      y = r.top;
+      const right = r.right;
+      branchSide = right + size.width <= window.innerWidth - MARGIN ? "right" : "left";
+      x = branchSide === "right" ? right : r.left - size.width;
+      y = r.top - 8;
     } else {
-      x = r.left;
-      const below = r.bottom + 8;
-      y = below + size.height <= window.innerHeight - MARGIN ? below : r.top - 8 - size.height;
+      x = r.left + (anchor.offsetWidth - size.width) / 2;
+      const below = r.bottom;
+      branchSide = below + size.height <= window.innerHeight - MARGIN ? "down" : "up";
+      y = branchSide === "down" ? below : r.top - size.height;
     }
     flyout.style.left = clamp(x, MARGIN, window.innerWidth - size.width - MARGIN) + "px";
     flyout.style.top = clamp(y, MARGIN, window.innerHeight - size.height - MARGIN) + "px";
+    branchBox = { x: parseFloat(flyout.style.left), y: parseFloat(flyout.style.top), ...size };
+    branchAnchor = anchor;
+    refreshInk();
+    wakeGlass();
   }
   function buildOptions(mode) {
     flyout.replaceChildren();
@@ -306,10 +357,13 @@
         persist();
         syncMode();
         buildOptions(mode);
+        layoutOptions(branchAnchor || primary);
         // Keep the options under the pointer when a preview commits a new mode.
         if (focused) Array.from(flyout.querySelectorAll("button"))
           .find((button) => button.getAttribute("aria-label") === label)?.focus({ preventScroll: true });
       }, { "aria-pressed": String(selected), class: "gfx-btn gfx-option" });
+      node.addEventListener("pointerenter", () => moveBubble(node));
+      node.addEventListener("focus", () => moveBubble(node));
       flyout.append(node);
     };
     if (mode === "camera") {
@@ -320,15 +374,29 @@
     } else {
       option("Add notes", "text", prefs.tool === "text", () => { prefs.tool = "text"; });
       option("Draw", "draw", prefs.tool === "draw", () => { prefs.tool = "draw"; });
+      const appearance = button("Annotation appearance", "settings", () => showDetails(!state.details), {
+        class: "gfx-btn gfx-option", "aria-expanded": String(state.details),
+      });
+      appearance.addEventListener("pointerenter", () => {
+        moveBubble(appearance);
+        clearTimeout(settingsTimer);
+        settingsTimer = setTimeout(() => showDetails(true), HOVER_DELAY);
+      });
+      appearance.addEventListener("focus", () => moveBubble(appearance));
+      flyout.append(appearance);
+      if (!state.details) { refreshInk(); return; }
       option("Erase drawing", "erase", prefs.tool === "erase", () => { prefs.tool = "erase"; });
       option("Light notes", "theme", prefs.light, () => {
         prefs.light = !prefs.light;
         annoLayer.querySelectorAll(".gfx-note").forEach((note) => note.classList.toggle("gfx-note-light", prefs.light));
       });
-      flyout.append(button("Undo last drawing", "undo", () => {
+      const undo = button("Undo last drawing", "undo", () => {
         chooseMode("annotate");
         strokes.pop()?.remove();
-      }, { class: "gfx-btn gfx-option" }));
+      }, { class: "gfx-btn gfx-option" });
+      undo.addEventListener("pointerenter", () => moveBubble(undo));
+      undo.addEventListener("focus", () => moveBubble(undo));
+      flyout.append(undo);
       const opacity = el("input", {
         type: "range", min: "15", max: "100", value: String(Math.round(
           (prefs.tool === "text" ? prefs.noteOpacity : prefs.strokeOpacity) * 100)),
@@ -351,6 +419,202 @@
       opacity.addEventListener("change", persist);
       flyout.append(el("label", { class: "gfx-opacity" }, el("span", {}, "Opacity"), opacity));
     }
+    refreshInk();
+  }
+  function showDetails(on) {
+    clearTimeout(settingsTimer);
+    if (state.details === on || flyout.dataset.mode !== "annotate") return;
+    state.details = on;
+    buildOptions("annotate");
+    layoutOptions(branchAnchor || primary);
+  }
+
+  // One glass body, not a collection of detached cards. Trace the union of the
+  // mode capsule and its perpendicular branch, rounding both outer corners and
+  // the inside of the neck. The geometry stays attached throughout expansion.
+  function glassOutline(rects, left, top) {
+    const xs = [...new Set(rects.flatMap((r) => [r.x, r.x + r.width]))].sort((a, b) => a - b);
+    const ys = [...new Set(rects.flatMap((r) => [r.y, r.y + r.height]))].sort((a, b) => a - b);
+    const filled = (x, y) => x >= 0 && y >= 0 && x < xs.length - 1 && y < ys.length - 1 &&
+      rects.some((r) => (xs[x] + xs[x + 1]) / 2 >= r.x && (xs[x] + xs[x + 1]) / 2 <= r.x + r.width &&
+        (ys[y] + ys[y + 1]) / 2 >= r.y && (ys[y] + ys[y + 1]) / 2 <= r.y + r.height);
+    const edges = new Map();
+    const edge = (a, b) => edges.set(a.join(","), b);
+    for (let x = 0; x < xs.length - 1; x++) for (let y = 0; y < ys.length - 1; y++) {
+      if (!filled(x, y)) continue;
+      if (!filled(x, y - 1)) edge([x, y], [x + 1, y]);
+      if (!filled(x + 1, y)) edge([x + 1, y], [x + 1, y + 1]);
+      if (!filled(x, y + 1)) edge([x + 1, y + 1], [x, y + 1]);
+      if (!filled(x - 1, y)) edge([x, y + 1], [x, y]);
+    }
+    const start = edges.keys().next().value, points = [];
+    let key = start;
+    do {
+      const [x, y] = key.split(",").map(Number);
+      points.push([xs[x] - left, ys[y] - top]);
+      key = edges.get(key)?.join(",");
+    } while (key && key !== start && points.length <= edges.size);
+    const corners = points.filter((p, i) => {
+      const a = points[(i + points.length - 1) % points.length], b = points[(i + 1) % points.length];
+      return (p[0] - a[0]) * (b[1] - p[1]) !== (p[1] - a[1]) * (b[0] - p[0]);
+    });
+    return corners.map((p, i) => {
+      const a = corners[(i + corners.length - 1) % corners.length], b = corners[(i + 1) % corners.length];
+      const before = Math.hypot(p[0] - a[0], p[1] - a[1]), after = Math.hypot(b[0] - p[0], b[1] - p[1]);
+      const concave = (p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0]) < 0;
+      const radius = Math.min(concave ? 18 : 36, before / 2, after / 2);
+      const entry = [p[0] + (a[0] - p[0]) * radius / before, p[1] + (a[1] - p[1]) * radius / before];
+      const exit = [p[0] + (b[0] - p[0]) * radius / after, p[1] + (b[1] - p[1]) * radius / after];
+      return `${i ? "L" : "M"}${entry.join(" ")}A${radius} ${radius} 0 0 ${concave ? 0 : 1} ${exit.join(" ")}`;
+    }).join("") + "Z";
+  }
+  const glass = {
+    open: 0, openV: 0, branch: 0, branchV: 0, width: 62, widthV: 0, height: 62, heightV: 0,
+    edges: null, edgeV: [0, 0, 0, 0], destination: null, targetEdges: null, squeeze: 0, axis: 0,
+    iris: 0, irisV: 0, pulse: 0, pulseV: 0, frame: 0, last: 0, acc: 0, ink: [],
+  };
+  function refreshInk() {
+    if (!inkLayer) return;
+    const label = hoveredButton?.getAttribute("aria-label");
+    const buttons = [primary, alternate, ...(flyout.hidden ? [] : flyout.querySelectorAll("button"))].filter((b) => !b.hidden);
+    inkLayer.replaceChildren();
+    glass.ink = buttons.map((button) => {
+      const glyph = el("span", { class: "gfx-glyph-dark", html: button.innerHTML });
+      glyph.classList.toggle("gfx-glyph-main", button === primary || button === alternate);
+      inkLayer.append(glyph);
+      return { button, glyph };
+    });
+    if (hoveredButton && !buttons.includes(hoveredButton)) {
+      hoveredButton = null;
+      moveBubble(buttons.find((b) => b.getAttribute("aria-label") === label) || primary);
+    }
+  }
+  function wakeGlass() {
+    if (!surface || glass.frame) return;
+    glass.last = performance.now();
+    glass.acc = 0;
+    glass.frame = requestAnimationFrame(tickGlass);
+  }
+  function tickGlass(now) {
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const targets = { open: state.expanded ? 1 : 0, branch: flyout.hidden ? 0 : 1,
+      width: branchBox?.width || 62, height: branchBox?.height || 62,
+      iris: state.expanded ? 1 : 0, pulse: 0 };
+    const spring = (key, target, k = .14, damping = .78) => {
+      glass[key + "V"] = (glass[key + "V"] + (target - glass[key]) * k) * damping;
+      glass[key] += glass[key + "V"];
+    };
+    if (hoveredButton?.isConnected && !hoveredButton.hidden) {
+      const r = hoveredButton.getBoundingClientRect();
+      glass.destination = [r.left, r.top, r.right, r.bottom];
+    }
+    if (reduced) {
+      for (const [key, value] of Object.entries(targets)) { glass[key] = value; glass[key + "V"] = 0; }
+      glass.edges = glass.destination && [...glass.destination];
+      glass.edgeV.fill(0);
+      glass.squeeze = 0;
+    } else {
+      glass.acc += Math.min(80, now - glass.last) * .75;
+      while (glass.acc >= 1000 / 60) {
+        for (const [key, value] of Object.entries(targets)) spring(key, value, key === "iris" ? .05 : .14);
+        if (glass.edges && glass.destination) {
+          if (glass.squeeze > 0) glass.squeeze--;
+          if (!glass.squeeze) glass.targetEdges = glass.destination;
+          const t = glass.targetEdges;
+          const dx = (t[0] + t[2] - glass.edges[0] - glass.edges[2]) / 2;
+          const dy = (t[1] + t[3] - glass.edges[1] - glass.edges[3]) / 2;
+          glass.axis = Math.abs(dx) >= Math.abs(dy) ? 0 : 1;
+          const leading = glass.axis === 0 ? dx >= 0 ? 2 : 0 : dy >= 0 ? 3 : 1;
+          for (let i = 0; i < 4; i++) {
+            const k = glass.squeeze ? .18 : i % 2 !== glass.axis ? .12 : i === leading ? .14 : .04;
+            glass.edgeV[i] = (glass.edgeV[i] + (t[i] - glass.edges[i]) * k) * (glass.squeeze ? .72 : .84);
+            glass.edges[i] += glass.edgeV[i];
+          }
+        }
+        glass.acc -= 1000 / 60;
+      }
+    }
+    glass.last = now;
+    drawGlass();
+    const settled = !glass.squeeze && Object.entries(targets).every(([key, t]) =>
+      Math.abs(t - glass[key]) < .01 && Math.abs(glass[key + "V"]) < .01) &&
+      (!glass.edges || glass.edges.every((v, i) => Math.abs(v - glass.destination[i]) < .1 && Math.abs(glass.edgeV[i]) < .1));
+    if (settled || !state.enabled || reduced) { glass.frame = 0; return; }
+    glass.frame = requestAnimationFrame(tickGlass);
+  }
+  function drawGlass() {
+    const open = clamp(glass.open, 0, 1.08), extension = 64 * open;
+    const body = { x: state.x, y: state.y, width: 72, height: 72 };
+    if (state.direction === "left") { body.x -= extension; body.width += extension; }
+    if (state.direction === "right") body.width += extension;
+    if (state.direction === "up") { body.y -= extension; body.height += extension; }
+    if (state.direction === "down") body.height += extension;
+    const rects = [body], amount = clamp(glass.branch, 0, 1.04);
+    if (branchBox && amount > .005) {
+      const b = { ...branchBox, width: Math.max(1, glass.width), height: Math.max(1, glass.height) };
+      if (branchSide === "right" || branchSide === "left") {
+        b.y += (branchBox.height - b.height) / 2;
+        if (branchSide === "left") b.x += branchBox.width - b.width * amount;
+        b.width *= amount;
+      } else {
+        b.x += (branchBox.width - b.width) / 2;
+        if (branchSide === "up") b.y += branchBox.height - b.height * amount;
+        b.height *= amount;
+      }
+      if (branchAnchor === alternate) {
+        const direction = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[state.direction];
+        b.x += direction[0] * 64 * (open - 1);
+        b.y += direction[1] * 64 * (open - 1);
+      }
+      rects.push(b);
+    }
+    for (const r of rects) {
+      const right = Math.min(window.innerWidth - 2, r.x + r.width), bottom = Math.min(window.innerHeight - 2, r.y + r.height);
+      r.x = Math.max(2, r.x); r.y = Math.max(2, r.y);
+      r.width = Math.max(1, right - r.x); r.height = Math.max(1, bottom - r.y);
+    }
+    const left = Math.min(...rects.map((r) => r.x)), top = Math.min(...rects.map((r) => r.y));
+    const width = Math.max(...rects.map((r) => r.x + r.width)) - left;
+    const height = Math.max(...rects.map((r) => r.y + r.height)) - top;
+    const path = glassOutline(rects, left, top);
+    for (const node of [surface, rim]) Object.assign(node.style, {
+      left: left + "px", top: top + "px", width: width + "px", height: height + "px",
+    });
+    surface.style.clipPath = `path("${path}")`;
+    rim.querySelector("path").setAttribute("d", path);
+    // Icons are revealed by the growing water body, never floating ahead of it.
+    toolbar.style.clipPath = `path("${glassOutline(rects, state.x, state.y)}")`;
+    if (branchBox) flyout.style.clipPath = `path("${glassOutline(rects, branchBox.x, branchBox.y)}")`;
+    inkLayer.style.clipPath = `path("${glassOutline(rects, 0, 0)}")`;
+    primary.style.transform = `scale(${1 + glass.pulse})`;
+    const iris = aperturePath(clamp(glass.iris, 0, 1.05));
+    shadow.querySelectorAll(".gfx-aperture").forEach((p) => p.setAttribute("d", iris));
+    if (!glass.edges || !glass.destination) return;
+    let [l, t, r, b] = glass.edges;
+    const restW = glass.destination[2] - glass.destination[0], restH = glass.destination[3] - glass.destination[1];
+    let w = clamp(r - l, 12, restW * 2.6), h = clamp(b - t, 12, restH * 2.6);
+    if (glass.axis === 0) h *= clamp(1 - .6 * (w - restW) / restW, .55, 1.4);
+    else w *= clamp(1 - .6 * (h - restH) / restH, .55, 1.4);
+    l = clamp((l + r - w) / 2, 2, window.innerWidth - w - 2);
+    t = clamp((t + b - h) / 2, 2, window.innerHeight - h - 2);
+    Object.assign(bubble.style, { left: l + "px", top: t + "px", width: w + "px", height: h + "px" });
+    const boxes = glass.ink.map(({ button }) => button.getBoundingClientRect());
+    glass.ink.forEach(({ glyph }, i) => {
+      const box = boxes[i], overlap = box.right > l && box.left < l + w && box.bottom > t && box.top < t + h;
+      Object.assign(glyph.style, { left: box.left + "px", top: box.top + "px", width: box.width + "px", height: box.height + "px",
+        opacity: overlap ? "1" : "0", clipPath: `inset(${Math.max(0, t - box.top)}px ${Math.max(0, box.right - l - w)}px ${Math.max(0, box.bottom - t - h)}px ${Math.max(0, l - box.left)}px round 18px)` });
+    });
+  }
+  function aperturePath(amount) {
+    const radius = 1.3 + 5.3 * amount, twist = Math.PI / 6 * amount;
+    const vertices = Array.from({ length: 6 }, (_, i) => {
+      const a = twist + i * Math.PI / 3;
+      return [12 + radius * Math.cos(a), 12 + radius * Math.sin(a)];
+    });
+    return "M" + vertices.map((p) => p.join(" ")).join("L") + "Z" + vertices.map((p, i) => {
+      const a = twist + i * Math.PI / 3 + .72;
+      return `M${p.join(" ")}L${12 + 8.6 * Math.cos(a)} ${12 + 8.6 * Math.sin(a)}`;
+    }).join("");
   }
   function chooseMode(mode) {
     state.mode = mode;
@@ -374,10 +638,15 @@
     inputLayer.classList.toggle("gfx-on", state.editing);
     inputLayer.dataset.tool = prefs.tool;
     drawingLayer.classList.toggle("gfx-erasing", state.editing && prefs.tool === "erase");
+    if (!state.editing && !state.expanded) flyout.hidden = true;
+    refreshInk();
+    wakeGlass();
     renderSelection();
   }
   function primaryAction() {
     if (draggingPointer || state.capturing) return;
+    glass.pulseV += .06;
+    wakeGlass();
     if (matchMedia("(hover: none)").matches && !state.expanded) {
       openMenus(state.direction, true);
       return;
@@ -766,6 +1035,8 @@
       host.showPopover();
       layout();
       positionAnnotations();
+      hoveredButton = null;
+      moveBubble(primary);
     } else {
       closeMenus();
       cancelSelection();

@@ -4,6 +4,11 @@ A dead-simple, glassy in-browser feedback tool. Annotate any page with text
 notes and capture screenshots — a cropped selection or the full page — straight
 to your clipboard or a folder. Built as a Manifest V3 Chrome extension.
 
+The liquid-glass personality is the point of the project, not decorative polish.
+Preserve the clear refractive lens, rim light, grain, iridescent ink, and spring
+squeeze/stretch. Expanding controls should grow from one continuous water-drop
+surface rather than appear as detached buttons or cards.
+
 ## v0.2 workflow
 
 This describes the development version. The published Chrome Web Store release
@@ -12,8 +17,10 @@ is still v0.1.0; release checks and followups are in [the roadmap](docs/ROADMAP.
 - **Open on demand:** click the extension icon on a supported page. v0.2 uses
   `activeTab` + `scripting` to inject the UI only after that user action. Drag the
   floating toolbar anywhere on screen. Hover the main icon for 240 ms to reveal
-  the other mode, then hover either icon to reveal its options. Flyouts follow
-  your mouse-entry side and flip when necessary to stay on screen. Clicking the
+  the other mode, then hover either icon to reveal its options. The primary
+  action, alternate mode, and options share one continuously expanding glass
+  surface. Options follow your mouse-entry side and flip when necessary to stay
+  on screen. Clicking the
   main icon performs the current mode's action; it does not expand the menu.
 - **Capture:** the camera initially uses **Selection → Copy to clipboard**.
   Its primary click captures with the chosen settings; if Selection has no
@@ -23,8 +30,13 @@ is still v0.1.0; release checks and followups are in [the roadmap](docs/ROADMAP.
 - **Choose options:** delayed hover flyouts expose scope (Selection / Full page)
   and destination (Clipboard / Download). Options open perpendicular to the
   toolbar and stay inside the viewport, including at corners and after resize.
-- **Annotate:** choose Note or Draw. The selected mode stays active after each
-  note or stroke until you close it or switch tools. Notes and strokes use
+- **Annotate:** choose **Add notes** or **Draw** to enter one editing session.
+  Its palette stays visible when the pointer leaves: Add notes, Draw, and
+  **Annotation appearance** remain accessible without hovering the main icon.
+  Hover Annotation appearance for 240 ms or click it to expand the same palette
+  with **Erase drawing**, **Undo last drawing**, **Light notes**, and
+  **Annotation opacity**. Switching Note/Draw keeps the session active;
+  **Escape** or **X** exits. Notes and strokes use
   document-coordinate anchors so they scroll with the page and keep their
   document positions on viewport resize. Captures include visible annotations.
 - **Remember preferences:** `chrome.storage.local` retains capture scope,
@@ -107,6 +119,14 @@ python3 -m http.server 8731
 
 The UI lives in a Shadow DOM so host-page CSS can't leak in or out. The toolbar
 and flyouts stay viewport-bound; annotation anchors belong to the document.
+The original liquid-glass personality is a critical part of the product:
+refraction, rim highlights, the moving lens, and spring expansion should read
+as one continuous surface. The UI contract uses `.gfx-pill` for the primary
+action, `.gfx-alternate` for the other mode, and `.gfx-options` for the selected
+mode's options. `.gfx-surface` supplies the single glass silhouette through a
+CSS `clip-path: path(...)` and spring transform; the root's `.gfx-liquid` is the
+animated lens. The latest surface and motion refinement is pending browser
+verification; earlier evidence is retained in [VERIFICATION.md](docs/VERIFICATION.md).
 The manifest grants `activeTab`, `scripting`, `downloads`, and `storage`, with
 no automatic content-script registration. Only preferences should be stored
 in local extension storage.

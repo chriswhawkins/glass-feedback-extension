@@ -17,16 +17,21 @@ export default async function verifyUI(page) {
     await page.mouse.move(p.x, p.y);
   };
   const hoverMain = async () => {
+    await page.mouse.move(100, 100);
+    await page.waitForTimeout(400);
     await moveTo(primary);
     await page.waitForTimeout(560);
   };
-  const chooseAnnotation = async (name) => {
-    await hoverMain();
-    if ((await primary.getAttribute("aria-label")).startsWith("Capture")) {
-      await moveTo(alternate);
-      await page.waitForTimeout(300);
+  const chooseAnnotation = async (name, value) => {
+    const control = name === "Annotation opacity"
+      ? options.getByRole("slider", { name, exact: true }) : option(name);
+    // Editing keeps quick tools visible; advanced controls expand this palette.
+    if (!["Add notes", "Draw"].includes(name) && !await control.isVisible()) {
+      await option("Annotation appearance").click();
+      await control.waitFor({ state: "visible" });
     }
-    await option(name).click();
+    if (name === "Annotation opacity") await control.fill(value);
+    else await control.click();
   };
   const chooseCamera = async (name) => {
     await hoverMain();
@@ -64,6 +69,20 @@ export default async function verifyUI(page) {
   await page.waitForTimeout(300);
   check(await options.getAttribute("data-mode") === "annotate", "hover previews annotation without switching");
   await option("Add notes").click();
+  await page.mouse.move(100, 100);
+  await page.waitForTimeout(400);
+  check(await options.isVisible() && await options.getAttribute("data-mode") === "annotate",
+    "annotation palette persists after the pointer leaves");
+  check(await option("Add notes").isVisible() && await option("Draw").isVisible() &&
+    await option("Annotation appearance").isVisible(), "persistent palette exposes all three quick options");
+  check(!await option("Erase drawing").isVisible() && !await option("Undo last drawing").isVisible(),
+    "advanced annotation controls start collapsed");
+  await chooseAnnotation("Draw");
+  check(await page.locator(".gfx-place-layer").getAttribute("data-tool") === "draw",
+    "persistent palette switches directly to drawing without main hover");
+  await chooseAnnotation("Add notes");
+  check(await page.locator(".gfx-place-layer").getAttribute("data-tool") === "text",
+    "persistent palette switches directly back to notes without main hover");
   await page.mouse.click(200, 280);
   await page.keyboard.type("Keep this detail clear.");
   await page.mouse.click(580, 350);
@@ -88,6 +107,15 @@ export default async function verifyUI(page) {
   check(Math.abs(before.y - after.y - 220) < 2, "notes retain document anchors while scrolling");
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.waitForTimeout(80);
+  await option("Annotation appearance").hover();
+  await page.waitForTimeout(80);
+  check(!await option("Erase drawing").isVisible(), "appearance hover has a deliberate delay");
+  await page.waitForTimeout(220);
+  await option("Erase drawing").waitFor({ state: "visible" });
+  check(await options.count() === 1 && await option("Add notes").isVisible() && await option("Draw").isVisible() &&
+    await option("Undo last drawing").isVisible() && await option("Light notes").isVisible() &&
+    await options.getByRole("slider", { name: "Annotation opacity", exact: true }).isVisible(),
+    "appearance hover expands the same palette after 240 ms with quick tools accessible");
   await chooseAnnotation("Draw");
   await page.mouse.move(400, 480);
   await page.mouse.down();
@@ -108,11 +136,23 @@ export default async function verifyUI(page) {
   await page.mouse.down();
   await page.mouse.move(540, 520, { steps: 12 });
   await page.mouse.up();
-  await hoverMain();
-  await option("Undo last drawing").click();
+  await chooseAnnotation("Undo last drawing");
   check(await page.locator(".gfx-drawings path").count() === 0, "undo removes the last stroke");
+  await chooseAnnotation("Add notes");
+  await chooseAnnotation("Light notes");
+  check(await notes.evaluateAll((nodes) => nodes.every((node) => node.classList.contains("gfx-note-light"))),
+    "appearance theme applies to all notes");
+  await chooseAnnotation("Annotation opacity", "65");
+  check(await notes.evaluateAll((nodes) => nodes.every((node) => node.style.getPropertyValue("--note-opacity") === "0.65")),
+    "appearance opacity applies to all notes");
   await page.keyboard.press("Escape");
   check(!(await page.locator(".gfx-place-layer").isVisible()), "Escape leaves annotation mode");
+  await hoverMain();
+  await moveTo(alternate);
+  await page.waitForTimeout(300);
+  await option("Add notes").click();
+  await page.getByRole("button", { name: "Exit annotation mode", exact: true }).click();
+  check(!await page.locator(".gfx-place-layer").isVisible(), "X leaves annotation mode");
   await primary.click();
   await page.mouse.move(120, 240);
   await page.mouse.down();

@@ -2,15 +2,21 @@
 
 ## Evidence
 
+The latest liquid-glass surface and persistent annotation palette were verified
+in Chrome. Workflow and layout counts below describe the updated scripts.
+Restricted-page feedback and simulated failure tests also retain the earlier
+v0.2 evidence; their implementation is unchanged by this refinement.
+
 | Check | Environment | Result |
 | --- | --- | --- |
 | Manifest, references, syntax, ZIP allowlist | Node, `npm run check` | Passed |
 | Activation, notice lifecycle, capture quota/tab safety, download contracts | `npm test`, mocked Chrome APIs | 29 passed |
-| Defaults, actual selection/clipboard, notes/delete/theme/opacity, draw/erase/undo, scroll/resize anchors, full-page/download, capture cleanup | Unpacked extension in headed Chrome for Testing 153.0.8010.12; `tools/fixture.html`, 1280×800 CSS pixels | 21 passed |
-| Four hover-entry sides, four corners, narrow camera/annotation options, containment/non-overlap | `tools/demo.html`, Playwright, 1280×800 and 360×640 | 44 passed |
+| Defaults, actual selection/clipboard, persistent Note/Draw palette, appearance expansion, notes/delete/theme/opacity, draw/erase/undo, scroll/resize anchors, X/Escape, full-page/download, capture cleanup | Unpacked extension in headed Chrome for Testing 153.0.8010.12; `tools/fixture.html`, 1280×800 CSS pixels | 31 passed |
+| Four hover-entry sides, four corners, narrow camera/annotation options, containment/non-overlap, continuous surface, refraction, squeeze/travel/settle | `tools/demo.html`, Playwright, 1280×800 and 360×640 | 78 passed |
 | Restricted-page notice | Native extension action on `chrome://settings` | Explanation displayed; return to regular page could activate again |
 | Host CSS isolation | Demo with `!important` hide/restyle rules and transformed document root | Tools stayed visible and viewport-fixed; hide/reopen worked |
 | Clipboard denial and capture failure | Demo with simulated API failures | Fallback download notice and failure cleanup passed |
+| Reduced motion | Demo with reduced-motion media emulation | Lens snaps to hovered tool without spring travel |
 
 The real full-page export was a completed 2560×4200 PNG of the 2100-CSS-pixel
 fixture at device scale 2. Both notes appeared at their document positions and
@@ -20,6 +26,34 @@ confirmed restored camera settings and cleared annotation content.
 
 The fixture uses smooth scrolling; capture overrides it temporarily and restores
 the original scroll position. No personal page content was used.
+
+## Latest refinement — motion acceptance
+
+The original liquid-glass personality is critical acceptance behavior. The
+primary `.gfx-pill`, alternative mode `.gfx-alternate`, and mode options
+`.gfx-options` should share a continuous expanding `.gfx-surface` silhouette
+with a spring-driven CSS clip-path path. The root's `.gfx-liquid` lens
+should animate with the controls. Structural assertions alone cannot verify
+the quality of refraction, rim highlights, continuity, or motion. Camera and
+annotation surfaces were visually inspected; the lens's squeeze and settling
+were measured across hover transitions. Controls are clipped to the growing
+body, retaining the original refraction, rim lighting, grain, iridescent ink,
+and opening camera aperture. Final aesthetic approval remains a hands-on review.
+
+The updated browser scripts cover one persistent annotation editing session:
+**Add notes**, **Draw**, and **Annotation appearance** stay accessible after
+the pointer leaves. Quick tools switch directly through visible `.gfx-options`.
+Hovering appearance for 240 ms or clicking it expands that same palette to
+reveal **Erase drawing**, **Undo last drawing**, **Light notes**, and
+**Annotation opacity**; advanced actions must reveal appearance first.
+Escape and X exit editing. Camera scope and destination retain their existing
+behavior.
+
+Layout checks now include the persistent annotation palette after the mode bar
+closes, direct Note/Draw switching, expanded appearance at 360×640, and resize
+back to 1280×800. These checks pass. Reduced-motion snapping and host-CSS
+isolation/hide/reopen were checked separately. The full-page PNG was inspected
+again to confirm that the new glass body, lens, and controls stay out of exports.
 
 ## Repeating the browser checks
 
