@@ -2,3 +2,6 @@
 node_modules/
 *.zip
 *.log
+.playwright-cli/
+dist/
+output/playwright/v02-*.png

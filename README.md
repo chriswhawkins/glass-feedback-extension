@@ -4,27 +4,44 @@ A dead-simple, glassy in-browser feedback tool. Annotate any page with text
 notes and capture screenshots — a cropped selection or the full page — straight
 to your clipboard or a folder. Built as a Manifest V3 Chrome extension.
 
-## Features
+## v0.2 workflow
 
-- **Floating glass toolbar** — a small round pill that floats over any page.
-  Drag it anywhere; on release it _gently pins_ to the nearest screen edge.
-  Tap it to expand into a row of tools; tap again to collapse.
-- **Select tool** — drag a rectangle to crop. The rest of the page dims and
-  blurs to focus the selection. The crop box can be moved and resized via 8
-  handles. Drag a fresh rectangle to start over (only one selection at a time).
-- **Text tool** — drop a resizable note anywhere. Notes use an eye-friendly
-  dark theme (or flip to light) and stay anchored to the page position where you
-  placed them, so they scroll with the content.
-- **Save** — choose **Copy to clipboard** or **Download to folder**, for either
-  the **Selection** (if you have one) or the **Full page**. Captures include any
-  text notes that are visible.
+This describes the development version. The published Chrome Web Store release
+is still v0.1.0; release checks and followups are in [the roadmap](docs/ROADMAP.md).
+
+- **Open on demand:** click the extension icon on a supported page. v0.2 uses
+  `activeTab` + `scripting` to inject the UI only after that user action. Drag the
+  floating toolbar anywhere on screen. Hover the main icon for 240 ms to reveal
+  the other mode, then hover either icon to reveal its options. Flyouts follow
+  your mouse-entry side and flip when necessary to stay on screen. Clicking the
+  main icon performs the current mode's action; it does not expand the menu.
+- **Capture:** the camera initially uses **Selection → Copy to clipboard**.
+  Its primary click captures with the chosen settings; if Selection has no
+  region, draw or adjust a region first, then click the explicit **Capture**
+  button. For **Full page**, choose the scope and click the camera to capture
+  using the chosen destination.
+- **Choose options:** delayed hover flyouts expose scope (Selection / Full page)
+  and destination (Clipboard / Download). Options open perpendicular to the
+  toolbar and stay inside the viewport, including at corners and after resize.
+- **Annotate:** choose Note or Draw. The selected mode stays active after each
+  note or stroke until you close it or switch tools. Notes and strokes use
+  document-coordinate anchors so they scroll with the page and keep their
+  document positions on viewport resize. Captures include visible annotations.
+- **Remember preferences:** `chrome.storage.local` retains capture scope,
+  destination, annotation tool, note theme/transparency, and stroke transparency. Notes and
+  drawings stay in the current page session: toggling visibility hides/restores
+  them, and reloading the page clears them. Only preferences persist.
+
+Example: open the UI, click the camera, drag a region, and click **Capture** to
+copy it. For a longer review, add notes and strokes, hover the camera to choose
+**Full page → Download**, then click the camera to save the annotated page.
 
 ## Install (load unpacked)
 
 1. Open `chrome://extensions`.
 2. Toggle **Developer mode** (top-right).
 3. Click **Load unpacked** and select this `glass-feedback-extension/` folder.
-4. Pin the extension, then click its toolbar icon on any normal web page to
+4. Pin the extension, then click its toolbar icon on a supported web page to
    show/hide the floating UI. (It can't run on `chrome://` pages or the Chrome
    Web Store.)
 
@@ -48,10 +65,14 @@ check before loading the extension or opening a pull request:
 
 ```bash
 npm run check
+npm test
+npm run package          # creates dist/glass-feedback-0.2.0.zip
 npm run generate-assets  # only when changing an asset generator
 ```
 
-The same check runs in GitHub Actions on every push and pull request.
+Checks, worker tests, and production ZIP packaging run in GitHub Actions on every
+push and pull request. Packaging includes only the extension's runtime files.
+Load the folder unpacked in Chrome 127 or later before publishing a new version.
 
 See [PRIVACY.md](PRIVACY.md) for the extension's data-handling policy.
 
@@ -63,7 +84,7 @@ inlined as a `data:` URI so the SVG filter is never tainted by a cross-origin
 
 ## Previewing the UI without Chrome
 
-`tools/demo.html` renders the toolbar over light, dark, and photographic regions
+`tools/demo.html` renders the toolbar over light and dark regions
 with the Chrome APIs stubbed. Serve it over HTTP (the lens map is fetched, so
 `file://` won't work):
 
@@ -76,48 +97,44 @@ python3 -m http.server 8731
 
 | File                  | Role                                                                        |
 | --------------------- | --------------------------------------------------------------------------- |
-| `manifest.json`       | MV3 manifest, permissions, content-script + service-worker registration.    |
+| `manifest.json`       | MV3 manifest and permissions for user-invoked injection.                    |
 | `background.js`       | Service worker: toggles the UI, `captureVisibleTab`, and `downloads`.       |
 | `content/content.js`  | All in-page behavior, rendered into an isolated Shadow DOM.                  |
 | `content/content.css` | The glass design system + component styles (Shadow-DOM scoped).             |
 | `assets/lens-map.png` | Displacement map driving the liquid-glass refraction filter.                |
-| `tools/`              | Dev-only: asset generators (`gen-icons`, `gen-lensmap`) + `demo.html` harness. |
+| `unavailable.*`       | Explanation popup when Chrome prevents page access or activation fails.     |
+| `tools/`              | Asset generators, packaging, demo, real-capture fixture, and UI verification. |
 
-The UI lives in a Shadow DOM so host-page CSS can't leak in or out. Text notes
-are absolutely positioned in document coordinates (they scroll with the page);
-the toolbar and selection overlay are viewport-fixed.
+The UI lives in a Shadow DOM so host-page CSS can't leak in or out. The toolbar
+and flyouts stay viewport-bound; annotation anchors belong to the document.
+The manifest grants `activeTab`, `scripting`, `downloads`, and `storage`, with
+no automatic content-script registration. Only preferences should be stored
+in local extension storage.
 
-## Assumptions made (open for the reconciliation round)
-
-These were judgment calls where the spec left room. Easy to change:
-
-1. **Enable/disable** is driven by clicking the extension's toolbar icon, which
-   toggles the floating UI on the active tab. The UI starts hidden per page
-   load (state is not persisted across reloads).
-2. **Cropped vs. full-page** is offered explicitly in the Save menu rather than
-   inferred: if a selection exists you get both "Selection" and "Full page"
-   groups; otherwise just "Full page".
-3. **Clipboard fallback** — if the browser blocks an image clipboard write
-   (e.g. lost user-activation after a long full-page capture, or a page's
-   permissions policy), it automatically falls back to a download and tells you.
-4. **Note control chrome** (theme/delete buttons, drag bar, resize handle) is
-   hidden in captures so only the clean note card appears.
-5. **Edge pinning** snaps to the single nearest edge (left/right/top/bottom).
-   When pinned right, the tool row expands leftward.
+If Chrome blocks an image clipboard write, the current implementation falls
+back to a download and tells you. Note controls are hidden in captures so only
+the annotation appears. See [verification evidence](docs/VERIFICATION.md) for the
+real-Chrome checks and limits of the current coverage.
 
 ## Known limitations
 
 - **Full-page capture** scrolls and stitches `captureVisibleTab` frames (~2/sec
   due to Chrome's quota), so tall pages take a few seconds. Pages with
   `position: fixed`/sticky headers may show that element repeated across the
-  stitch, and very tall pages are clamped to a max canvas dimension. Horizontal
+  stitch. Oversized captures fail with a notice rather than silently cropping:
+  the maximum canvas dimension is 16,384 pixels and the pixel budget is 64 Mi.
+  Horizontal
   overflow isn't stitched (viewport width only).
 - Lazy-loaded/virtualized content may not all be captured if it renders only on
-  view.
+  view. Full-page mode captures the document's vertical scroll, not independent
+  nested scroll containers. Use Selection on these pages.
+- Annotations keep document coordinates, not semantic anchors to page elements.
+  Scrolling and viewport resizing preserve their coordinates, but responsive
+  reflow or changing page content can move the underlying element away.
 
 ## Status
 
-End-to-end functional and visually complete. The glass UI is implemented per the
-Aave "glass for the web" technique: an SVG lens-refraction filter (`assets/lens-map.png`),
-layered specular/rim shadows, grain, and design tokens — plus a liquid selection
-bubble that springs between tools with an iridescent under-glass glyph.
+v0.2 is ready for hands-on testing, not yet published to the Chrome Web Store.
+The demo is useful for visual checks, but uses stubbed capture APIs. Real-Chrome
+verification and remaining website coverage are documented in
+[the roadmap](docs/ROADMAP.md). Updated walkthroughs follow once the UX settles.
