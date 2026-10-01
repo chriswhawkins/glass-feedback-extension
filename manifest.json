@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Glass Feedback",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "minimum_chrome_version": "127",
   "description": "A dead-simple, glassy in-browser feedback tool: annotate pages and capture screenshots to the clipboard or a folder.",
   "icons": {
     "16": "icons/icon16.png",
@@ -21,14 +22,7 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["activeTab", "downloads"],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "run_at": "document_idle",
-      "js": ["content/content.js"]
-    }
-  ],
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
   "web_accessible_resources": [
     {
       "resources": ["content/content.css", "assets/lens-map.png"],
