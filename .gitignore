@@ -5,3 +5,5 @@ node_modules/
 .playwright-cli/
 dist/
 output/playwright/v02-*.png
+output/playwright/release-*/
+output/playwright/camera-*/

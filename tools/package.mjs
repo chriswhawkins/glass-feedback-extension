@@ -1,6 +1,5 @@
 import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, utimesSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -30,9 +29,10 @@ function run(command, args, options = {}) {
 
 function packageExtension() {
   run(process.execPath, ["tools/check.mjs"]);
-  const manifest = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
-  const staging = mkdtempSync(join(tmpdir(), "glass-feedback-package-"));
-  const output = join(root, "dist", `glass-feedback-${manifest.version}.zip`);
+  const outputDirectory = join(root, "dist");
+  mkdirSync(outputDirectory, { recursive: true });
+  // Stage beside the output so the final atomic rename works across mounts.
+  const staging = mkdtempSync(join(outputDirectory, ".glass-feedback-package-"));
   try {
     const source = join(staging, "files");
     const timestamp = new Date("2000-01-01T00:00:00Z");
@@ -43,6 +43,12 @@ function packageExtension() {
       chmodSync(target, 0o644);
       utimesSync(target, timestamp, timestamp);
     }
+    // Validate exactly the copied runtime files; concurrent edits may happen
+    // between the initial check and staging. package.json is never archived.
+    copyFileSync(join(root, "package.json"), join(source, "package.json"));
+    run(process.execPath, ["tools/check.mjs", source]);
+    const manifest = JSON.parse(readFileSync(join(source, "manifest.json"), "utf8"));
+    const output = join(outputDirectory, `glass-feedback-${manifest.version}.zip`);
     // Fixed order, permissions, timestamps, timezone, and no platform extra fields.
     run("zip", ["-X", "-q", join(staging, "production.zip"), ...PACKAGE_FILES], {
       cwd: source,

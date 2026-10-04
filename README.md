@@ -1,160 +1,160 @@
 # Glass Feedback
 
-A dead-simple, glassy in-browser feedback tool. Annotate any page with text
-notes and capture screenshots — a cropped selection or the full page — straight
-to your clipboard or a folder. Built as a Manifest V3 Chrome extension.
+Annotate supported web pages with notes, freehand drawings, rectangles, and
+element highlights, then export a region or full-page image to your clipboard or
+downloads. Glassy is the floating liquid-glass control for this Manifest V3
+Chrome extension.
 
-The liquid-glass personality is the point of the project, not decorative polish.
-Preserve the clear refractive lens, rim light, grain, iridescent ink, and spring
-squeeze/stretch. Expanding controls should grow from one continuous water-drop
-surface rather than appear as detached buttons or cards.
+**Release status:** Chrome Web Store **0.1.0**, updated **2026-09-25**. This
+checkout's manifest and package are **0.2.0**, an upcoming release. The workflow
+below describes current development source. See the [release checklist](docs/ROADMAP.md),
+[draft Store copy](docs/STORE_LISTING.md), and [changelog](CHANGELOG.md).
+[Current release readiness](docs/RELEASE_READINESS.md) records checks, browser evidence,
+and remaining gates. [Historical verification](docs/VERIFICATION.md) records earlier builds.
 
-## v0.2 workflow
+## First use
 
-This describes the development version. The published Chrome Web Store release
-is still v0.1.0; release checks and followups are in [the roadmap](docs/ROADMAP.md).
+1. In Chrome **127 or later**, open `chrome://extensions`, enable **Developer
+   mode**, and choose **Load unpacked** with this repository folder.
+2. Pin Glass Feedback and click its browser toolbar icon on a supported page.
+   This turns it on across supported pages and tabs, including after navigation
+   or a browser restart. Click the icon again to turn it off everywhere.
+   Glassy opens with Camera active. Click the browser icon again to hide the UI
+   and annotations; reopening preserves them in the same document.
+3. For the default **Selection → Copy to clipboard**, drag on the page to draw
+   a viewport region. Adjust its edges or move it, then click the region's
+   **Capture** button to confirm.
+4. Hover Glassy and slowly pull left or right to reveal modes. Hover a mode
+   icon, then leave the menu to select it, or click the icon. Pull up or down
+   from Glassy for the selected mode's options.
+5. Click Glassy to activate and reveal mode choices and current tool options
+   together. Press **Esc** to release the page for browsing. Tools do not time out.
+   Switching to Annotate activates it immediately; annotations remain visible.
 
-- **Open on demand:** click the extension icon on a supported page. v0.2 uses
-  `activeTab` + `scripting` to inject the UI only after that user action. Drag the
-  floating toolbar anywhere on screen. Hover the main icon for 240 ms to reveal
-  the other mode, then hover either icon to reveal its options. The primary
-  action, alternate mode, and options share one continuously expanding glass
-  surface. Options follow your mouse-entry side and flip when necessary to stay
-  on screen. Clicking the
-  main icon performs the current mode's action; it does not expand the menu.
-- **Capture:** the camera initially uses **Selection → Copy to clipboard**.
-  Its primary click captures with the chosen settings; if Selection has no
-  region, draw or adjust a region first, then click the explicit **Capture**
-  button. For **Full page**, choose the scope and click the camera to capture
-  using the chosen destination.
-- **Choose options:** delayed hover flyouts expose scope (Selection / Full page)
-  and destination (Clipboard / Download). Options open perpendicular to the
-  toolbar and stay inside the viewport, including at corners and after resize.
-- **Annotate:** choose **Add notes** or **Draw** to enter one editing session.
-  Its palette stays visible when the pointer leaves: Add notes, Draw, and
-  **Annotation appearance** remain accessible without hovering the main icon.
-  Hover Annotation appearance for 240 ms or click it to expand the same palette
-  with **Erase drawing**, **Undo last drawing**, **Light notes**, and
-  **Annotation opacity**. Switching Note/Draw keeps the session active;
-  **Escape** or **X** exits. Notes and strokes use
-  document-coordinate anchors so they scroll with the page and keep their
-  document positions on viewport resize. Captures include visible annotations.
-- **Remember preferences:** `chrome.storage.local` retains capture scope,
-  destination, annotation tool, note theme/transparency, and stroke transparency. Notes and
-  drawings stay in the current page session: toggling visibility hides/restores
-  them, and reloading the page clears them. Only preferences persist.
+See the [user guide](docs/USER_GUIDE.md) for item editing and keyboard/touch controls.
 
-Example: open the UI, click the camera, drag a region, and click **Capture** to
-copy it. For a longer review, add notes and strokes, hover the camera to choose
-**Full page → Download**, then click the camera to save the annotated page.
+## Two modes
 
-## Install (load unpacked)
+| Mode | Page action | Options |
+| --- | --- | --- |
+| **Camera** | Selection: drag a viewport region and confirm. ✕ clears it for retry; Esc releases Camera. Full page: click anywhere to capture. | Selection / Full page; Copy PNG / Save PNG to Downloads. |
+| **Annotate** | Draw a line for an arrow; hold briefly then drag for a rectangle; sketch anything else. Optionally click highlighted page elements to outline them. | Element highlighting on/off; next drawing color; notes shown/hidden on new drawings. |
 
-1. Open `chrome://extensions`.
-2. Toggle **Developer mode** (top-right).
-3. Click **Load unpacked** and select this `glass-feedback-extension/` folder.
-4. Pin the extension, then click its toolbar icon on a supported web page to
-   show/hide the floating UI. (It can't run on `chrome://` pages or the Chrome
-   Web Store.)
+Drag Glassy's main icon to reposition it. It stays where you place it; menus
+fit around the viewport. Global settings and separate Note/Wand modes are hidden.
 
-Downloads land in your browser's download folder under a `glass-feedback/`
-subfolder.
+Hover an item to reveal its handle, then hover the handle to expand its toolbar.
+Handles also open on click or keyboard focus. Drawing tools show/hide an associated
+note, change color/opacity, and delete. Note tools offer light/dark, opacity,
+and delete. Hover the opacity droplet for a slider; click to keep it open,
+then click again to close. Select note text for bold, italic, and
+underline. Drag regular note edges to move it; the bottom-right corner resizes it.
 
-## Regenerating assets
+New notes start light at **15% glass-background opacity**. Drawings and element
+highlights start blue (`#345b8c`); the initial recent colors are blue and red
+(`#ff526b`). Default-color changes affect only new drawings. Each completed
+drawing gesture is a separate item. Hiding a note preserves its text; deleting
+the note leaves its drawing in place. Rest on a drawing to reveal nearby tools
+and make it ready to grab/move.
 
-Icons and the glass refraction lens map are generated with dependency-free
-scripts (no npm install needed):
+## Capture, access, and privacy
+
+Visible annotations are included in captures; editing controls are hidden for
+export. Saved images are lossless PNG in Chrome's configured download location
+(normally Downloads). Chrome's own download preferences may prompt for a location.
+Clipboard copies are PNG too. If an
+image clipboard write fails, the extension falls back to a download and tells
+you. Keep the requesting tab active and avoid scrolling or resizing during capture.
+
+Website content, annotations, and screenshot pixels are handled locally.
+Preferences and the global on/off setting persist in `chrome.storage.local`. Annotation content clears
+on reload or navigation. There are no accounts, analytics, screenshot uploads,
+or remotely loaded executable code. See [the privacy policy](PRIVACY.md).
+
+The manifest requests `activeTab`, `scripting`, `downloads`, and `storage`.
+It also requests `<all_urls>` host access so the toolbar and screenshot capture
+work across supported pages after activation. A main-frame content script
+restores the saved on/off setting on each page; the toolbar is built only when
+turned on. Chrome site-access controls must allow the extension on those sites.
+The bundled stylesheet and lens image are exposed through `web_accessible_resources`.
+
+## Known limits
+
+- **Page access:** Chrome-protected pages, including `chrome://` pages and the
+  Chrome Web Store, cannot host the tools. File pages require Chrome's separate
+  file-access setting. The UI does not directly annotate inside embedded frames.
+- **Full-page images:** capture scrolls and stitches the vertical document at
+  roughly two frames per second. Fixed/sticky content can repeat. Lazy loading,
+  virtualization can be incomplete; changing page height or capture scale
+  aborts with a retry message. Nested scroll
+  containers and horizontal overflow are not stitched.
+- **Image size:** output is capped at 16,384 pixels per dimension and
+  64 × 1024 × 1024 pixels overall. Display scaling affects these limits.
+  Oversized images show an error; use a smaller region.
+- **Anchors:** regular notes/drawings use document coordinates, so reflow may
+  move page content away. Element outlines follow the selected DOM element while it
+  exists; replacing the element can break that association.
+- **Input:** region drawing, movement, and element targeting require a pointer.
+  Complete keyboard-only, touch, and screen-reader flows need current browser
+  verification. Clicking Glassy reveals choices without a directional hover.
+
+## Local demo
+
+Serve the repository root over HTTP:
 
 ```bash
-node tools/gen-icons.mjs     # icons/icon{16,32,48,128}.png
-node tools/gen-lensmap.mjs   # assets/lens-map.png (displacement map)
+python3 -m http.server 8732
 ```
 
-## Development checks
+Open `http://localhost:8732/tools/demo.html`. The demo loads the same UI code
+over light, dark, illustrated, and colorful sample panels. Smart drawing,
+associated notes, and element outlines are interactive. Camera explains that real screenshots,
+clipboard export, and image downloads require the extension.
+Chrome APIs are stubbed; preferences use the origin's `localStorage`.
+The demo is not capture verification. Its Store links lead to the published build,
+which may differ from this upcoming 0.2.0 preview. A real-UI walkthrough shows
+the flow. Clear canvas reloads without resetting preferences.
 
-This project has no runtime dependencies. Run the manifest and referenced-file
-check before loading the extension or opening a pull request:
+To exercise your installed unpacked extension on the same canvases, open
+`http://localhost:8732/tools/demo.html?extension=1#playground`, then click the
+extension's Chrome toolbar icon. This variant loads no demo tools or API stubs.
+`tools/fixture.html` is a separate, tall fixture with a strict Content Security
+Policy for real activation and scrolling-capture checks.
+
+## Development and release preparation
+
+There are no runtime dependencies. Development scripts require Node.js 20 or
+later. Existing commands are:
 
 ```bash
-npm run check
-npm test
-npm run package          # creates dist/glass-feedback-0.2.0.zip
-npm run generate-assets  # only when changing an asset generator
+npm run check            # manifest, referenced files, and JavaScript syntax
+npm test                 # worker and content tests with mocked browser APIs
+npm run validate         # check and test together
+npm run package          # builds dist/glass-feedback-0.2.0.zip
+npm run generate-assets  # regenerate icons and refraction lens map
+node tools/build-media.mjs # rebuild promo media from retained browser frames; needs ffmpeg
 ```
 
-Checks, worker tests, and production ZIP packaging run in GitHub Actions on every
-push and pull request. Packaging includes only the extension's runtime files.
-Load the folder unpacked in Chrome 127 or later before publishing a new version.
+CI is configured to run checks, worker/content tests, and ZIP creation on pushes and
+pull requests. Those checks do not establish browser behavior or Store approval.
+`npm run checklist:ui` and `npm run checklist:layout` print the current manual
+browser checklists from `tools/verify-ui.mjs` and `tools/verify-layout.mjs`.
+They do not open a browser or establish that any check passed. Record observed
+results against the final unpacked extension separately.
 
-See [PRIVACY.md](PRIVACY.md) for the extension's data-handling policy.
+## Architecture and visual contract
 
-The lens map is an RGBA displacement map (R = horizontal bend, G = vertical,
-gray = neutral) with a clear center and refraction ramped toward the rim — that
-is what gives the toolbar its real-glass lens edge. It's loaded at runtime and
-inlined as a `data:` URI so the SVG filter is never tainted by a cross-origin
-`chrome-extension://` reference on real pages.
+| File | Role |
+| --- | --- |
+| `manifest.json` / `background.js` | On-demand activation, visible-tab capture, and downloads. |
+| `content/content.js` / `content/content.css` | Modes and annotations inside an isolated Shadow DOM. |
+| `assets/lens-map.png` / `icons/` | Bundled refraction map and extension icons. |
+| `unavailable.*` | Explanation when Chrome prevents activation. |
+| `tools/` | Demo, generators, fixture, verification scripts, and ZIP builder. |
 
-## Previewing the UI without Chrome
-
-`tools/demo.html` renders the toolbar over light and dark regions
-with the Chrome APIs stubbed. Serve it over HTTP (the lens map is fetched, so
-`file://` won't work):
-
-```bash
-python3 -m http.server 8731
-# open http://localhost:8731/tools/demo.html
-```
-
-## Architecture
-
-| File                  | Role                                                                        |
-| --------------------- | --------------------------------------------------------------------------- |
-| `manifest.json`       | MV3 manifest and permissions for user-invoked injection.                    |
-| `background.js`       | Service worker: toggles the UI, `captureVisibleTab`, and `downloads`.       |
-| `content/content.js`  | All in-page behavior, rendered into an isolated Shadow DOM.                  |
-| `content/content.css` | The glass design system + component styles (Shadow-DOM scoped).             |
-| `assets/lens-map.png` | Displacement map driving the liquid-glass refraction filter.                |
-| `unavailable.*`       | Explanation popup when Chrome prevents page access or activation fails.     |
-| `tools/`              | Asset generators, packaging, demo, real-capture fixture, and UI verification. |
-
-The UI lives in a Shadow DOM so host-page CSS can't leak in or out. The toolbar
-and flyouts stay viewport-bound; annotation anchors belong to the document.
-The original liquid-glass personality is a critical part of the product:
-refraction, rim highlights, the moving lens, and spring expansion should read
-as one continuous surface. The UI contract uses `.gfx-pill` for the primary
-action, `.gfx-alternate` for the other mode, and `.gfx-options` for the selected
-mode's options. `.gfx-surface` supplies the single glass silhouette through a
-CSS `clip-path: path(...)` and spring transform; the root's `.gfx-liquid` is the
-animated lens. The latest surface and motion refinement is pending browser
-verification; earlier evidence is retained in [VERIFICATION.md](docs/VERIFICATION.md).
-The manifest grants `activeTab`, `scripting`, `downloads`, and `storage`, with
-no automatic content-script registration. Only preferences should be stored
-in local extension storage.
-
-If Chrome blocks an image clipboard write, the current implementation falls
-back to a download and tells you. Note controls are hidden in captures so only
-the annotation appears. See [verification evidence](docs/VERIFICATION.md) for the
-real-Chrome checks and limits of the current coverage.
-
-## Known limitations
-
-- **Full-page capture** scrolls and stitches `captureVisibleTab` frames (~2/sec
-  due to Chrome's quota), so tall pages take a few seconds. Pages with
-  `position: fixed`/sticky headers may show that element repeated across the
-  stitch. Oversized captures fail with a notice rather than silently cropping:
-  the maximum canvas dimension is 16,384 pixels and the pixel budget is 64 Mi.
-  Horizontal
-  overflow isn't stitched (viewport width only).
-- Lazy-loaded/virtualized content may not all be captured if it renders only on
-  view. Full-page mode captures the document's vertical scroll, not independent
-  nested scroll containers. Use Selection on these pages.
-- Annotations keep document coordinates, not semantic anchors to page elements.
-  Scrolling and viewport resizing preserve their coordinates, but responsive
-  reflow or changing page content can move the underlying element away.
-
-## Status
-
-v0.2 is ready for hands-on testing, not yet published to the Chrome Web Store.
-The demo is useful for visual checks, but uses stubbed capture APIs. Real-Chrome
-verification and remaining website coverage are documented in
-[the roadmap](docs/ROADMAP.md). Updated walkthroughs follow once the UX settles.
+The liquid-glass personality is part of the product: clear refraction, rim
+light, grain, iridescent ink, and spring squeeze/stretch. The primary `.gfx-pill`,
+mode buttons `.gfx-alternate`, and `.gfx-options` grow from one continuous
+`.gfx-surface`; `.gfx-liquid` supplies the moving lens. Menus stay viewport-bound
+while annotations belong to the document. The bundled lens map is inlined as
+a data URI for the SVG filter. Final motion and visual quality need hands-on review.

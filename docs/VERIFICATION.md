@@ -1,5 +1,9 @@
 # v0.2 verification — 2026-10-01
 
+**Historical evidence only.** This snapshot predates the four-mode interface.
+Use [the 2026-10-03 release review](RELEASE_REVIEW.md) for current results and
+remaining release gates; the counts below are not current acceptance claims.
+
 ## Evidence
 
 The latest liquid-glass surface and persistent annotation palette were verified

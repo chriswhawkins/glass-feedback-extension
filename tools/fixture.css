@@ -1,0 +1,8 @@
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; }
+section { height: 700px; padding: 60px 8vw; }
+.hero { color: white; background: linear-gradient(120deg, #6366f1, #2dd4bf); }
+.light { background: #f6f7f9; color: #15171c; }
+.dark { background: #0d1016; color: #e8eaf0; }
+h1 { font-size: 42px; }

@@ -1,10 +1,12 @@
-import { readFileSync, statSync } from "node:fs";
-import { dirname, join, posix } from "node:path";
+import { lstatSync, readFileSync, readdirSync } from "node:fs";
+import { join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { PACKAGE_FILES } from "./package.mjs";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+// An optional root checks a staged production snapshot with the same tools.
+const root = process.argv[2] ? resolve(process.argv[2]) : projectRoot;
 const errors = [];
 let manifest;
 try {
@@ -17,9 +19,13 @@ try {
 const iconPaths = (icons) => typeof icons === "string" ? [icons] : Object.values(icons ?? {});
 const referencedFiles = new Set();
 function reference(file, from = "manifest.json", relative = false) {
-  if (!file || /^(?:[a-z]+:|\/\/|#)/i.test(file)) return;
+  if (!file || /^(?:data:|#)/i.test(file)) return;
+  if (typeof file !== "string" || /^(?:[a-z]+:|\/\/)/i.test(file)) {
+    errors.push(`${from}: runtime assets must be local files: ${file}`);
+    return;
+  }
   const clean = file.split(/[?#]/)[0];
-  const path = posix.normalize(relative ? posix.join(dirname(from), clean) : clean);
+  const path = posix.normalize(relative ? posix.join(posix.dirname(from), clean) : clean);
   if (path.startsWith("../") || path.startsWith("/") || /[*\\]/.test(path)) {
     errors.push(`${from}: invalid or unsupported runtime path ${file}`);
     return;
@@ -41,24 +47,53 @@ for (const file of [
 ]) reference(file);
 
 if (manifest.manifest_version !== 3) errors.push("Expected Manifest V3");
-if (Number(manifest.minimum_chrome_version) < 127 || !manifest.minimum_chrome_version) {
+if (!/^\d+(?:\.\d+)*$/.test(manifest.minimum_chrome_version ?? "") ||
+    Number(String(manifest.minimum_chrome_version).split(".")[0]) < 127) {
   errors.push("minimum_chrome_version must be at least 127 for action.openPopup");
 }
-if (!/^\d+\.\d+\.\d+$/.test(manifest.version)) errors.push("Invalid extension version");
-const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+if (!/^\d+\.\d+\.\d+$/.test(manifest.version) ||
+    manifest.version.split(".").some((part) => Number(part) > 65535) ||
+    !manifest.version.split(".").some((part) => Number(part) > 0)) errors.push("Invalid extension version");
+let pkg;
+try {
+  pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+} catch (error) {
+  console.error(`Invalid package.json: ${error.message}`);
+  process.exit(1);
+}
 if (pkg.version !== manifest.version) errors.push("package.json and manifest.json versions differ");
-for (const permission of ["activeTab", "scripting", "downloads", "storage"]) {
+if (Object.keys(pkg.dependencies ?? {}).length || Object.keys(pkg.optionalDependencies ?? {}).length) {
+  errors.push("The extension must remain free of runtime package dependencies");
+}
+const permissions = ["activeTab", "scripting", "downloads", "storage"];
+for (const permission of permissions) {
   if (!manifest.permissions?.includes(permission)) errors.push(`Missing permission: ${permission}`);
 }
-if (manifest.content_scripts?.length || manifest.host_permissions?.length || manifest.optional_host_permissions?.length) {
-  errors.push("Use click-only activeTab injection without static scripts or host permissions");
+for (const permission of [...(manifest.permissions ?? []), ...(manifest.optional_permissions ?? [])]) {
+  if (!permissions.includes(permission)) errors.push(`Unexpected permission: ${permission}`);
+}
+if (manifest.action?.default_popup) errors.push("A default popup suppresses click-only activation");
+if (manifest.externally_connectable) errors.push("External messaging is not part of the on-demand model");
+if (JSON.stringify(manifest.host_permissions) !== JSON.stringify(["<all_urls>"]) ||
+    manifest.content_scripts?.length !== 1 ||
+    JSON.stringify(manifest.content_scripts[0].matches) !== JSON.stringify(["<all_urls>"]) ||
+    JSON.stringify(manifest.content_scripts[0].js) !== JSON.stringify(["content/content.js"]) ||
+    manifest.content_scripts[0].all_frames === true || manifest.optional_host_permissions?.length) {
+  errors.push("Global activation requires all-sites access and the main-frame content script");
 }
 
 // Follow static runtime references as well as manifest entries. Dynamic SVG/data
 // URLs in the content script are not extension files.
+function isRegularFile(file) {
+  const parts = file.split("/");
+  return parts.every((_, index) => {
+    const entry = lstatSync(join(root, ...parts.slice(0, index + 1)));
+    return index === parts.length - 1 ? entry.isFile() : entry.isDirectory();
+  });
+}
 for (const file of referencedFiles) {
   try {
-    if (!statSync(join(root, file)).isFile()) throw new Error("not a file");
+    if (!isRegularFile(file)) throw new Error("not a regular file");
   } catch {
     errors.push(`Missing runtime file: ${file}`);
     continue;
@@ -87,17 +122,18 @@ for (const file of referencedFiles) {
 }
 for (const file of PACKAGE_FILES) {
   try {
-    if (!statSync(join(root, file)).isFile()) throw new Error("not a file");
+    if (!isRegularFile(file)) throw new Error("not a regular file");
   } catch {
     errors.push(`Missing production file: ${file}`);
   }
 }
 const scripts = new Set([
   ...PACKAGE_FILES.filter((file) => /\.js$/.test(file)),
-  "tools/check.mjs", "tools/package.mjs", "tools/gen-icons.mjs", "tools/gen-lensmap.mjs", "tools/verify-ui.mjs", "tools/verify-layout.mjs", "tests/background.test.mjs",
+  ...["tools", "tests"].flatMap((directory) => readdirSync(join(projectRoot, directory))
+    .filter((file) => file.endsWith(".mjs")).map((file) => `${directory}/${file}`)),
 ]);
 for (const file of scripts) {
-  const result = spawnSync(process.execPath, ["--check", join(root, file)], { encoding: "utf8" });
+  const result = spawnSync(process.execPath, ["--check", join(PACKAGE_FILES.includes(file) ? root : projectRoot, file)], { encoding: "utf8" });
   if (result.error || result.status !== 0) errors.push(`${file}: ${result.error?.message || result.stderr.trim()}`);
 }
 if (errors.length) {
