@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a page, capture, or control that does not work as expected.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: "Issues are public. Do not include private page content, credentials, tokens, or sensitive screenshots. Chrome-protected pages cannot host the tools."
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Extension version, Chrome version, operating system, and whether this is the demo or extension.
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page or safe reproduction URL
+      description: A public URL or page description. Remove private query parameters; leave blank if sensitive.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the mode, defaults, and actions. For capture, include Selection/Full page and Copy/Save.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+      description: Include any Glassy error message. Attach only non-sensitive screenshots.
+    validations:
+      required: true

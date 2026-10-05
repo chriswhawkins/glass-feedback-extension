@@ -1,8 +1,17 @@
 {
   "name": "glass-feedback-extension",
+  "version": "0.2.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "check": "node tools/check.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "validate": "npm run check && npm test",
+    "checklist:ui": "node tools/verify-ui.mjs",
+    "checklist:layout": "node tools/verify-layout.mjs",
+    "package": "node tools/package.mjs",
     "generate-assets": "node tools/gen-icons.mjs && node tools/gen-lensmap.mjs"
   }
 }

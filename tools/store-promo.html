@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glass Feedback — Store promo artwork</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; width: 440px; height: 280px; overflow: hidden; color: #fff; background: #173c35; font-family: system-ui, sans-serif; }
+    main { position: relative; width: 100%; height: 100%; padding: 25px 28px; isolation: isolate; }
+    main::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 95% 0%, #91bcb9aa, transparent 60%); }
+    header { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 650; letter-spacing: -.03em; }
+    header img { width: 34px; height: 34px; }
+    h1 { margin: 16px 0 10px; font-size: 34px; font-weight: 500; letter-spacing: -.055em; line-height: 1.05; max-width: 310px; }
+    p { margin: 0; max-width: 230px; font-size: 12px; color: #e2eddf; line-height: 1.5; }
+    .sample { position: absolute; bottom: -20px; right: -45px; width: 255px; border: 1px solid #ffffff88; border-radius: 15px; box-shadow: 0 14px 32px #071c2855; transform: rotate(-9deg); }
+    .caption { position: absolute; bottom: 22px; left: 28px; font-size: 10px; letter-spacing: .06em; color: #c4d9ca; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><img src="../icons/icon128.png" alt=""><span>glass feedback</span></header>
+    <h1>A little glass.<br>A lot of clarity.</h1>
+    <p>Notes. Drawings. Highlights.<br>Capture what matters.</p>
+    <img class="sample" src="../store-assets/0.2.0/01-annotate-1280x800.jpg" alt="Glass notes and drawing on a sample web page">
+    <span class="caption">PAGE FEEDBACK, WITH FEELING.</span>
+  </main>
+</body>
+</html>

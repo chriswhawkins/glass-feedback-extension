@@ -1,123 +1,177 @@
 # Glass Feedback
 
-A dead-simple, glassy in-browser feedback tool. Annotate any page with text
-notes and capture screenshots — a cropped selection or the full page — straight
-to your clipboard or a folder. Built as a Manifest V3 Chrome extension.
+Glass Feedback is a Chrome extension for marking up web pages and exporting
+the result as an image. It combines region/full-page screenshots with smart
+drawing, element outlines, and notes attached to drawings.
 
-## Features
+The interface is built around **Glassy**, a movable liquid-glass control.
+Refraction, continuous expanding surfaces, and spring-driven motion are part
+of the product, not a theme layered over a conventional toolbar.
 
-- **Floating glass toolbar** — a small round pill that floats over any page.
-  Drag it anywhere; on release it _gently pins_ to the nearest screen edge.
-  Tap it to expand into a row of tools; tap again to collapse.
-- **Select tool** — drag a rectangle to crop. The rest of the page dims and
-  blurs to focus the selection. The crop box can be moved and resized via 8
-  handles. Drag a fresh rectangle to start over (only one selection at a time).
-- **Text tool** — drop a resizable note anywhere. Notes use an eye-friendly
-  dark theme (or flip to light) and stay anchored to the page position where you
-  placed them, so they scroll with the content.
-- **Save** — choose **Copy to clipboard** or **Download to folder**, for either
-  the **Selection** (if you have one) or the **Full page**. Captures include any
-  text notes that are visible.
+The implementation is plain JavaScript, CSS, SVG, and Canvas using
+**Manifest V3**. There is no framework, backend, runtime package dependency,
+or build step required to load the extension. The source version is
+`0.2.0`; the [Chrome Web Store](https://chromewebstore.google.com/detail/glass-feedback/kihjocbmloocaobeiaimofhpfkaheoan)
+release is managed separately.
 
-## Install (load unpacked)
+## Product surface
 
-1. Open `chrome://extensions`.
-2. Toggle **Developer mode** (top-right).
-3. Click **Load unpacked** and select this `glass-feedback-extension/` folder.
-4. Pin the extension, then click its toolbar icon on any normal web page to
-   show/hide the floating UI. (It can't run on `chrome://` pages or the Chrome
-   Web Store.)
+**Camera** captures a user-selected viewport region or scrolls and stitches a
+full-page image. Output is PNG, written to the clipboard or Chrome's download
+location. Clipboard failure falls back to a download with a visible notice.
 
-Downloads land in your browser's download folder under a `glass-feedback/`
-subfolder.
+**Annotate** interprets quick lines as arrows, hold-and-drag gestures as
+rectangles, and other strokes as freehand drawings. Optional element targeting
+creates outlines tied to DOM elements. Each drawing has its own color,
+opacity, deletion control, and associated note. Notes support editing,
+light/dark appearance, opacity, and bold/italic/underline text.
 
-## Regenerating assets
+Glassy exposes modes horizontally and tool options vertically. Clicking it
+reveals both branches; dragging repositions it. Esc releases the page for
+normal browsing. The browser extension icon controls activation across
+supported tabs. See the [user guide](docs/USER_GUIDE.md) for interaction details.
 
-Icons and the glass refraction lens map are generated with dependency-free
-scripts (no npm install needed):
+## Code organization
+
+| Location | Responsibility |
+| --- | --- |
+| `manifest.json`, `background.js` | Browser integration: activation, message validation, serialized tab capture, downloads, and restricted-page notices. |
+| `content/content.js` | In-page state, DOM/SVG UI, pointer gestures, annotations, liquid motion, crop selection, image composition, and export orchestration. |
+| `content/content.css`, `assets/`, `icons/` | Isolated UI styles, bundled refraction map, and extension artwork. |
+| `tools/` | Interactive demo, native test fixture, asset/media generators, static validation, manual browser checklists, and ZIP packaging. |
+| `tests/`, `.github/workflows/validate.yml` | Node regression tests and CI checks/package creation. |
+
+### Runtime boundaries
+
+The main-frame content script registers message/storage listeners on supported
+pages. It reads the persisted activation state and builds the UI when enabled.
+A duplicate-injection guard prevents multiple instances in the same document.
+
+The UI lives in an **open Shadow DOM** with an adopted stylesheet, hosted in a
+manual popover in the browser's top layer. This separates component styling
+from website CSS and lets the controls sit above ordinary page stacking contexts.
+Notes and SVG drawings use document coordinates; tool menus use viewport bounds.
+Element outlines retain references to their selected DOM targets.
+
+The service worker owns APIs unavailable to content scripts. Clicking the
+browser action updates the shared activation setting and notifies open tabs;
+missing receivers get the bundled content script injected. Protected-page
+failures use `unavailable.html` to explain the restriction.
+
+Capture follows a message boundary: the content script requests a visible-tab
+PNG with `GFX_CAPTURE_VISIBLE`; the worker validates the sender and active tab,
+serializes requests, and enforces a 550 ms capture interval. The content script
+crops or stitches the returned pixels using Canvas. Clipboard writes happen
+there; file exports use `GFX_DOWNLOAD` through the worker.
+
+The glass renderer combines CSS backdrop filtering, an SVG displacement filter
+using `assets/lens-map.png`, and animation-frame-driven surface/lens geometry.
+When changing controls, preserve the connected surface, refraction, and motion
+alongside hit targets and viewport containment.
+
+### State and persistence
+
+`chrome.storage.local` stores `gfxEnabled` (shared activation) and
+`gfxPreferences` (tool defaults and appearance preferences). Storage changes
+synchronize activation across documents.
+
+Annotation text, formatting, drawing geometry, DOM associations, and screenshot
+pixels remain in page memory. Hiding/reopening preserves annotations in the
+same document; reload or navigation clears them. This is an annotation/export
+tool, not a persistent document editor.
+
+## Run locally
+
+Use **Chrome 127+**. Open `chrome://extensions`, enable Developer mode, choose
+**Load unpacked**, and select this repository root. No compilation or package
+installation is required. Click the extension icon on a supported page.
+
+After runtime edits, reload the extension in Chrome and reload the target page.
+Existing documents may still contain the previous content script.
+
+For the shared-UI demo, serve the repository root:
 
 ```bash
-node tools/gen-icons.mjs     # icons/icon{16,32,48,128}.png
-node tools/gen-lensmap.mjs   # assets/lens-map.png (displacement map)
+python3 -m http.server 8732
 ```
 
-## Development checks
+Open `http://localhost:8732/tools/demo.html`. It loads the extension's actual
+UI source with stubbed Chrome APIs and localStorage-backed preferences.
+Annotation and crop interactions work; native screenshot/clipboard/download
+operations intentionally show an extension-only explanation.
 
-This project has no runtime dependencies. Run the manifest and referenced-file
-check before loading the extension or opening a pull request:
+To test the installed extension without demo stubs, open
+`http://localhost:8732/tools/demo.html?extension=1#playground` and activate it
+from Chrome's toolbar. `tools/fixture.html` provides tall sample content with a
+strict Content Security Policy for activation and scrolling-capture checks.
+
+## Development workflow
+
+Development scripts require **Node.js 20+**. Packaging also requires the
+`zip` command. Asset regeneration requires **ffmpeg**; generated runtime
+assets are committed, so ffmpeg is not needed to load or package the extension.
 
 ```bash
-npm run check
-npm run generate-assets  # only when changing an asset generator
+npm run validate        # static validation and Node regression tests
+npm run package         # dist/glass-feedback-<manifest-version>.zip
+npm run generate-assets # regenerate bundled icons and refraction map
 ```
 
-The same check runs in GitHub Actions on every push and pull request.
+`npm run check` and `npm test` run the validation stages independently.
+Tests cover worker/content behavior with mocked browser APIs and demo/media
+contracts; they do not establish native Chrome capture or visual quality.
+CI runs validation and packaging on pushes and pull requests.
 
-See [PRIVACY.md](PRIVACY.md) for the extension's data-handling policy.
+`npm run checklist:ui` and `npm run checklist:layout` print manual browser
+plans, not automated browser results. Exercise the final unpacked build and
+inspect actual exported pixels after changing capture or annotation behavior.
 
-The lens map is an RGBA displacement map (R = horizontal bend, G = vertical,
-gray = neutral) with a clear center and refraction ramped toward the rim — that
-is what gives the toolbar its real-glass lens edge. It's loaded at runtime and
-inlined as a `data:` URI so the SVG filter is never tainted by a cross-origin
-`chrome-extension://` reference on real pages.
+`tools/package.mjs` stages an explicit runtime-file allowlist, validates it,
+and creates the ZIP with the manifest at its root. Demo pages, documentation,
+tests, and promotional media do not enter the archive.
 
-## Previewing the UI without Chrome
+Promotional media is separate from runtime assets. Rebuild it with
+`node tools/build-media.mjs [capture-directory]`; this requires ffmpeg and
+retained real-browser capture frames. See the
+[media kit](store-assets/0.2.0/README.md) for formats and provenance.
 
-`tools/demo.html` renders the toolbar over light, dark, and photographic regions
-with the Chrome APIs stubbed. Serve it over HTTP (the lens map is fetched, so
-`file://` won't work):
+The [Glassy mascot](assets/brand/glassy-mascot-v1.png) is the branding master
+used for extension icons and the demo. Its [generation record](assets/brand/glassy-mascot-v1.md)
+documents provenance; it does not replace the in-page tool glyphs.
 
-```bash
-python3 -m http.server 8731
-# open http://localhost:8731/tools/demo.html
-```
+## Permissions and data handling
 
-## Architecture
+The manifest requests `activeTab`, `scripting`, `downloads`, `storage`, and
+`<all_urls>` host access. These support browser-action activation, restoring
+activation on navigation, screenshot capture, and local export. Chrome's
+site-access settings still govern where the extension can run.
 
-| File                  | Role                                                                        |
-| --------------------- | --------------------------------------------------------------------------- |
-| `manifest.json`       | MV3 manifest, permissions, content-script + service-worker registration.    |
-| `background.js`       | Service worker: toggles the UI, `captureVisibleTab`, and `downloads`.       |
-| `content/content.js`  | All in-page behavior, rendered into an isolated Shadow DOM.                  |
-| `content/content.css` | The glass design system + component styles (Shadow-DOM scoped).             |
-| `assets/lens-map.png` | Displacement map driving the liquid-glass refraction filter.                |
-| `tools/`              | Dev-only: asset generators (`gen-icons`, `gen-lensmap`) + `demo.html` harness. |
+Only the bundled stylesheet and lens image are web-accessible resources.
+Executable code is bundled; page content and screenshots are processed locally.
+There are no accounts, analytics, or uploads to the developer.
+See [PRIVACY.md](PRIVACY.md) for retention, export destinations, and disclosures.
 
-The UI lives in a Shadow DOM so host-page CSS can't leak in or out. Text notes
-are absolutely positioned in document coordinates (they scroll with the page);
-the toolbar and selection overlay are viewport-fixed.
+## Engineering constraints
 
-## Assumptions made (open for the reconciliation round)
+- **Page access:** Chrome-protected pages cannot host tools. File pages require
+  separate file access; embedded frames are not directly annotated.
+- **Capture scope:** full-page stitching covers the vertical document, not
+  nested scrollers or horizontal overflow. Sticky elements can repeat;
+  lazy/virtualized content may be incomplete. Tab, page-height, or scale
+  changes can abort capture.
+- **Output limits:** 16,384 pixels per dimension and 64 × 1024 × 1024 total
+  pixels. Device scaling affects when these limits are reached.
+- **Anchoring:** coordinate-based annotations do not track responsive reflow.
+  Element associations depend on the selected DOM node remaining present.
+- **Input coverage:** drawing and targeting require a pointer. Complete
+  keyboard-only, touch, and screen-reader workflows need further verification.
 
-These were judgment calls where the spec left room. Easy to change:
+## Project references
 
-1. **Enable/disable** is driven by clicking the extension's toolbar icon, which
-   toggles the floating UI on the active tab. The UI starts hidden per page
-   load (state is not persisted across reloads).
-2. **Cropped vs. full-page** is offered explicitly in the Save menu rather than
-   inferred: if a selection exists you get both "Selection" and "Full page"
-   groups; otherwise just "Full page".
-3. **Clipboard fallback** — if the browser blocks an image clipboard write
-   (e.g. lost user-activation after a long full-page capture, or a page's
-   permissions policy), it automatically falls back to a download and tells you.
-4. **Note control chrome** (theme/delete buttons, drag bar, resize handle) is
-   hidden in captures so only the clean note card appears.
-5. **Edge pinning** snaps to the single nearest edge (left/right/top/bottom).
-   When pinned right, the tool row expands leftward.
+[User guide](docs/USER_GUIDE.md) · [Changelog](CHANGELOG.md) ·
+[Release roadmap](docs/ROADMAP.md) · [Release evidence](docs/RELEASE_READINESS.md) ·
+[Store listing copy](docs/STORE_LISTING.md)
 
-## Known limitations
-
-- **Full-page capture** scrolls and stitches `captureVisibleTab` frames (~2/sec
-  due to Chrome's quota), so tall pages take a few seconds. Pages with
-  `position: fixed`/sticky headers may show that element repeated across the
-  stitch, and very tall pages are clamped to a max canvas dimension. Horizontal
-  overflow isn't stitched (viewport width only).
-- Lazy-loaded/virtualized content may not all be captured if it renders only on
-  view.
-
-## Status
-
-End-to-end functional and visually complete. The glass UI is implemented per the
-Aave "glass for the web" technique: an SVG lens-refraction filter (`assets/lens-map.png`),
-layered specular/rim shadows, grain, and design tokens — plus a liquid selection
-bubble that springs between tools with an iridescent under-glass glyph.
+Report reproducible problems through
+[GitHub issues](https://github.com/chriswhawkins/glass-feedback-extension/issues).
+Use safe sample pages; do not include private page content in public reports.
