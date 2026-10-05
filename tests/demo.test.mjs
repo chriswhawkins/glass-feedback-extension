@@ -23,6 +23,15 @@ test("all local demo assets and preview source exist", async () => {
   await access(new URL("../content/content.css", import.meta.url));
 });
 
+test("demo Chrome stub supports activation storage listeners", () => {
+  const context = vm.createContext({ window: {}, URL, URLSearchParams, location: {
+    href: "http://localhost:8732/tools/demo.html", search: "",
+  } });
+  new vm.Script(demo.match(/<script>([\s\S]*?)<\/script>/)[1]).runInContext(context);
+  assert.equal(typeof context.window.chrome.storage.onChanged.addListener, "function");
+  assert.doesNotThrow(() => context.window.chrome.storage.onChanged.addListener(() => {}));
+});
+
 function jpegSize(buffer) {
   assert.equal(buffer.readUInt16BE(0), 0xffd8);
   let cursor = 2;
@@ -35,6 +44,21 @@ function jpegSize(buffer) {
   }
   throw new Error("No JPEG dimensions found");
 }
+
+test("mascot icons have exact RGBA canvases and the Store icon matches the package", async () => {
+  for (const size of [16, 32, 48, 128]) {
+    const icon = await readFile(new URL(`../icons/icon${size}.png`, import.meta.url));
+    assert.deepEqual([...icon.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(icon.readUInt32BE(16), size);
+    assert.equal(icon.readUInt32BE(20), size);
+    assert.equal(icon[24], 8);
+    assert.equal(icon[25], 6, "preserve mascot alpha");
+  }
+  assert.deepEqual(
+    await readFile(new URL("../store-assets/0.2.0/store-icon-128.png", import.meta.url)),
+    await readFile(new URL("../icons/icon128.png", import.meta.url)),
+  );
+});
 
 test("current listing images have required JPEG canvas sizes", async () => {
   for (const name of ["01-annotate-1280x800.jpg", "02-controls-1280x800.jpg", "03-camera-1280x800.jpg"])

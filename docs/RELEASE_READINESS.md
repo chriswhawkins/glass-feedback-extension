@@ -1,4 +1,34 @@
-# 0.2.0 readiness — 2026-10-04
+# 0.2.0 readiness — 2026-10-05
+
+## Final packaging pass
+
+The 0.2.0 ZIP is prepared for upload as an update to the Store's currently
+published 0.1.0 (verified on 2026-10-05). It includes the selected Glassy mascot
+icons and refreshed short description. The mascot master and demo artwork stay
+outside the runtime ZIP. No additional permissions or remote code were added.
+
+The developer README now briefs the product from the code and runtime
+perspective. Icon regeneration uses developer-only ffmpeg; committed assets
+mean loading, checking and packaging still need no runtime dependencies.
+
+The final demo check exposed a missing `chrome.storage.onChanged` stub. It was
+fixed with a regression test. The primary CTA selects Annotate; mascot assets
+load, and the desktop document has no horizontal overflow (1265 px client/scroll
+width). Native controls still use the original Camera/Annotate glyphs.
+
+Native Chrome was reloaded from `dist/glass-feedback-0.2.0`, refreshed from the
+exact candidate ZIP. On the strict-CSP fixture, region selection → clear →
+selection retry → clipboard succeeded. The real clipboard PNG was opened in
+Preview and saved at `output/playwright/release-2026-10-05/01-region-clipboard.png`
+(600×200). It contains the selected gradient surface. Demo branding evidence is
+`02-demo-branding.png` in the same ignored directory.
+
+Final annotated full-page download/scroll-restoration and the tactile polish
+pass remain unverified on this candidate: native Chrome was in active use,
+so automation stopped rather than interfering. Run those checks before Store
+submission; historical exports are not evidence for this exact build.
+
+## Shared-UI review — 2026-10-04
 
 **Prepared, not published.** Current source has Camera and Annotate only.
 Global settings, separate Note/Wand modes and timed tool deactivation are
@@ -10,7 +40,7 @@ deployment was performed.
 
 | Check | Result / scope |
 | --- | --- |
-| Static checks + tests | `npm run validate`: 77 pass, 0 fail/skip. Browser APIs are mocked; this is not native export evidence. Updated old test contracts for no timeout, immediate Annotate activation, two-mode click expansion, PNG/Downloads defaults. |
+| Static checks + tests | `npm run validate`: 79 pass, 0 fail/skip after the October 5 branding/demo regression checks. Browser APIs are mocked; this is not native export evidence. Updated old test contracts for no timeout, immediate Annotate activation, two-mode click expansion, PNG/Downloads defaults. |
 | Demo desktop | In-app browser, 1280×800 viewport: draw-first CTA activates Annotate and reaches canvases; a line becomes an arrow; its toolbar adds an editable associated note; current options expand together. |
 | Note tools | Real note toolbar/opacity control exercised at 15%→45%; slider extends below the note. No current visual shift was observed during this interaction. Exhaustive hover-edge/click-pin testing is still a manual gate. |
 | Demo Camera | Real region selection and centered crop confirmation shown; Capture gives an extension-only notice and Store link, not fake success. |
@@ -26,9 +56,9 @@ deployment was performed.
 `dist/glass-feedback-0.2.0.zip`
 
 SHA-256:
-`a860ec8bfa4fe9134b9ebb93f197024de81af3e034cc52b409c633a473dac8e4`
+`2b708b6eb3776b25d1e23b7d60b508acdea2d1a5e55cdfe1ca38127b5d08bd78`
 
-The archive is a **pre-release candidate**, not certified upload approval.
+The archive is an **upload candidate**, not Chrome Store approval.
 Rebuild after any runtime source edit. Earlier ZIP hashes do not identify it.
 
 Current media: [asset kit](../store-assets/0.2.0/README.md).
@@ -44,7 +74,7 @@ media using ffmpeg; that tool is not included in the extension runtime.
 
 | Owner / gate | Next action | Budget |
 | --- | --- | --- |
-| Maintainer — native exports | Load/reload this exact candidate in Chrome. Inspect an actual region clipboard PNG and full-page annotated PNG download; verify crop retry, scroll restoration and output location. Old native captures are historical. | 15–20 min |
+| Maintainer — native exports | Region clipboard/crop retry passed October 5. Inspect a full-page annotated PNG download; verify scroll restoration and output location. Old full-page native captures are historical. | 5–10 min |
 | Maintainer — tactile polish | Slow pulls, hover-and-leave switching, drawing move/delete, note show/hide/text formatting, opacity hover/pin/close, all corners and low screen height. Preview captures are not a full interaction pass. | 15 min |
 | Publisher — Store | Review accurate data/permission disclosures, privacy/support URLs, category/languages, final copy/graphics. Upload candidate and separate current JPEGs; defer publication if needed. | 15 min plus Store review |
 | Publisher — video/demo | Upload MP4 to YouTube to obtain the listing's video URL. Choose a demo host and review its logs/privacy before deployment. No hosting destination has been invented. | 15 min plus host setup |

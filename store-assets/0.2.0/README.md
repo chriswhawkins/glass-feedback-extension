@@ -5,6 +5,11 @@ Captured on 2026-10-04 from the current shared UI at
 This is a preview of upcoming 0.2, not evidence of Store publication or
 native capture success.
 
+The Store icon was updated on 2026-10-05 to the selected Glassy mascot
+from `assets/brand/glassy-mascot-v1.png`, matching the bundled icons.
+The interaction stills and video remain accurate: the mascot is branding,
+not a replacement for the in-page Camera/Annotate control.
+
 | File | Use |
 | --- | --- |
 | `store-icon-128.png` | Store icon, 128×128 PNG; matches bundled icon. |

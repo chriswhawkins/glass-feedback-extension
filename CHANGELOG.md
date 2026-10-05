@@ -2,6 +2,8 @@
 
 ## 0.2.0 — Unreleased
 
+- **Branding:** Glassy's rounded liquid-glass mascot now appears in extension
+  icons, the Store icon and demo; in-page tool glyphs are unchanged.
 - **Two modes:** Camera and Annotate, with directional liquid-glass menus.
   Click Glassy for mode choices and current-tool options together.
   Global settings, separate Note mode, and Magic Wand mode are hidden.
@@ -22,6 +24,7 @@
   silent walkthrough and GIF, current Store stills, refreshed guides/tests.
   All executable extension code is bundled; all-sites host access supports
   activation and capture. There are no runtime package dependencies.
+  The README now documents architecture, runtime boundaries and development.
 
 See [release readiness](docs/RELEASE_READINESS.md) for observed checks and
 remaining native/publisher gates. Nothing here asserts Store publication.

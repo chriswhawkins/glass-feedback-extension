@@ -85,6 +85,16 @@ published version. Use sample content in listing media.
 
 See the [asset kit](../store-assets/0.2.0/README.md).
 
+For this update, upload `dist/glass-feedback-0.2.0.zip` through the existing
+item's **Package → Upload New Package**, not as a new extension. The public
+listing was still 0.1.0 on 2026-10-05; 0.2.0 is higher. If a dashboard draft
+already uses 0.2.0, replace that draft package before submission, or use a higher
+manifest/package version if the dashboard requires it. See
+[Google's update instructions](https://developer.chrome.com/docs/webstore/update).
+Replace the Store icon with the current `store-icon-128.png` (Glassy mascot),
+update copy and accurate data/permission declarations, then submit for review.
+ZIP upload and Store submission have not been performed by this preparation.
+
 - Icon: 128×128 PNG.
 - Current stills: three 1280×800 JPEGs without alpha.
 - Small promo: 440×280 JPEG.

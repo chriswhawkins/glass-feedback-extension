@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Glass Feedback — a little glass, a lot of clarity</title>
   <meta name="description" content="Draw an arrow. Leave a note. Try Glass Feedback's liquid-glass tools on a live playground, then bring page annotations and screenshots to Chrome.">
+  <link rel="icon" type="image/png" href="../icons/icon32.png">
   <style>
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
@@ -27,7 +28,7 @@
     .cta { border: 0; padding: 13px 23px; border-radius: 40px; background: #e4efbc; color: #173c35; font-weight: 650; text-decoration: none; display: inline-block; }
     .hero .secondary { font-size: 13px; color: #e1e9df; text-underline-offset: 4px; }
     .hero-note { font-size: 12px; color: #cfddd0; margin-top: 14px; }
-    .glass-orb { position: absolute; right: -45px; bottom: -120px; width: 360px; height: 360px; border-radius: 50%; background: linear-gradient(140deg, #ffffff55, #ffffff05 45%, #172b3c11); border: 1px solid #ffffff77; box-shadow: inset 12px 14px 30px #ffffff22, inset -8px -10px 30px #071b2944, 0 20px 40px #081b2222; backdrop-filter: blur(8px); pointer-events: none; }
+    .glassy-mascot { position: absolute; right: 24px; bottom: 10px; width: 300px; height: 300px; object-fit: contain; pointer-events: none; }
     .glassy-tip { position: absolute; top: 28px; right: 32px; font-size: 11px; letter-spacing: .04em; color: #e1edd9; }
     section { padding: 74px 0; }
     .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 26px; }
@@ -88,7 +89,7 @@
     @media (max-width: 850px) { .watch-grid { grid-template-columns: 1fr; } .demo-nav a:not(.store-link) { display: none; } }
     @media (max-width: 700px) {
       .wrap { width: calc(100% - 32px); } .hero { padding: 86px 28px 54px; min-height: 560px; }
-      .glassy-tip { left: 28px; right: auto; } .glass-orb { width: 240px; height: 240px; opacity: .5; }
+      .glassy-tip { left: 28px; right: auto; } .glassy-mascot { display: none; }
       .steps, .play-grid { grid-template-columns: 1fr; } .section-heading, .exercise { display: block; }
       .section-heading p { margin-top: 16px; } .exercise p { margin-top: 8px; } section { padding: 48px 0; }
     }
@@ -102,7 +103,7 @@
     const extensionPreview = new URLSearchParams(location.search).get("extension") === "1";
     if (!extensionPreview) {
     window.chrome = {
-      storage: { local: {
+      storage: { onChanged: { addListener: () => {} }, local: {
         get: async (key) => ({ [key]: JSON.parse(localStorage.getItem(key) || "null") }),
         set: async (values) => {
           for (const [key, value] of Object.entries(values)) localStorage.setItem(key, JSON.stringify(value));
@@ -136,7 +137,7 @@
         <div class="actions"><button class="cta" data-try="annotate" disabled>Try drawing on the page ↓</button><a class="secondary" href="#watch">See the flow first</a></div>
         <p class="hero-note">No sign-up. Nothing to install to try drawing and notes.<br>Real screenshot exports need the Chrome extension. This is the upcoming 0.2 experience; the Store version may differ.</p>
         <p class="loading-note" role="status">Getting Glassy ready…</p>
-        <div class="glass-orb" aria-hidden="true"></div>
+        <img class="glassy-mascot" src="../assets/brand/glassy-mascot-v1.png" width="300" height="300" alt="Glassy, a round liquid-glass blob with blue eyes">
       </div>
       <section id="how">
         <div class="section-heading"><h2>A small tool.<br>A natural flow.</h2><p>Click to see your choices, or dip into the glass and pull toward an edge. The menus grow with you.</p></div>
@@ -179,7 +180,7 @@
       </section>
       <section class="finish"><p class="eyebrow">Keep the feeling. Add the capture.</p><h2>Bring Glassy to your own pages.</h2><p>This demo lets you try the interface and annotations. Install the Chrome extension for real region and full-page screenshots, clipboard copy, and image downloads on supported pages.</p><a class="cta" href="https://chromewebstore.google.com/detail/glass-feedback/kihjocbmloocaobeiaimofhpfkaheoan" target="_blank" rel="noopener noreferrer">Get Glass Feedback for Chrome ↗</a><div class="actions" style="justify-content:center"><button class="store-link" data-try="camera" disabled style="background:none;border:0">Try the camera here</button></div></section>
     </main>
-    <footer><span>Glass Feedback · made for the details.</span><span><a href="https://github.com/chriswhawkins/glass-feedback-extension" target="_blank" rel="noopener noreferrer">Source & support</a> · <a href="https://github.com/chriswhawkins/glass-feedback-extension/blob/codex/v02-hover-capture-annotations/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a></span></footer>
+    <footer><span>Glass Feedback · made for the details.</span><span><a href="https://github.com/chriswhawkins/glass-feedback-extension" target="_blank" rel="noopener noreferrer">Source & support</a> · <a href="https://github.com/chriswhawkins/glass-feedback-extension/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a></span></footer>
   </div>
   <script>
     (async () => {
