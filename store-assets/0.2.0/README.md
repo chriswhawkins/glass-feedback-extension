@@ -17,6 +17,7 @@ not a replacement for the in-page Camera/Annotate control.
 | `02-controls-1280x800.jpg` | Listing screenshot: current Annotate options on the connected glass surface. |
 | `03-camera-1280x800.jpg` | Listing screenshot: adjustable region and centered confirmation toolbar. No export-success claim. |
 | `small-promo-440x280.jpg` | Small promo, branding and real UI sample. |
+| `marquee-promo-1400x560.jpg` | Marquee promo, 1400×560 opaque JPEG; generated brand illustration, not a product screenshot. Also attached separately to the GitHub release. |
 | `preview-poster.jpg` | Demo video's poster; same real annotation composition. |
 | `glassy-walkthrough.mp4` | Silent ~20-second, 1280×800 H.264 walkthrough with burned-in instructions. No music/licensing dependencies. |
 | `glassy-reveal.gif` | 468×600 short liquid-menu loop for README, demo promotion and social sharing. Not a Store screenshot. |
@@ -46,6 +47,13 @@ runtime dependency. Captured sequences are `01-reveal/`, `02-note/`,
 `05-region/`, `06-demo-notice/`; stills are `01-annotate.jpg`,
 `02-controls.jpg`, `03-camera.jpg`, and `10-small-promo.jpg`.
 Raw frames are retained locally, not bundled in the extension or committed.
+
+The marquee was generated with the built-in image-generation tool using the
+existing mascot and annotation still as references, then normalized to the
+exact upload canvas as an opaque JPEG. Its generation prompt/provenance is in
+`marquee-promo.md`. It is a brand illustration, not native export evidence.
+The previously published media ZIP is unchanged; download the marquee's
+standalone release attachment separately.
 
 ## Chrome listing
 
