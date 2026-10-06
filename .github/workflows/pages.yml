@@ -1,0 +1,50 @@
+name: Publish demo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm run validate
+      - uses: actions/configure-pages@v5
+      - name: Stage public demo only
+        run: |
+          mkdir -p _site/tools _site/content _site/assets/brand _site/icons _site/store-assets/0.2.0
+          cp tools/demo.html _site/tools/
+          cp tools/demo-index.html _site/index.html
+          cp content/content.js content/content.css _site/content/
+          cp assets/lens-map.png _site/assets/
+          cp assets/brand/glassy-mascot-v1.png _site/assets/brand/
+          cp icons/icon32.png icons/icon48.png _site/icons/
+          cp store-assets/0.2.0/preview-poster.jpg store-assets/0.2.0/glassy-walkthrough.mp4 _site/store-assets/0.2.0/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

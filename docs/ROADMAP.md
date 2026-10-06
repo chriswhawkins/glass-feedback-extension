@@ -28,8 +28,9 @@ tracks docs/demo/accessibility.
 tracks website capture coverage. Final evidence should include build/commit,
 Chrome version, OS, viewport/scale, steps, actual exported image and limitations.
 
-No hosting destination has been selected. Do not invent a public demo URL;
-the repository-served preview is ready for host selection, not deployed.
+The public demo is deployed through GitHub Pages from main after validation.
+See [publisher handoff](UPDATE_0.2.0.md) for its URL, ZIP and remaining native
+checks. YouTube upload and Chrome submission remain publisher actions.
 
 ## Submission facts
 

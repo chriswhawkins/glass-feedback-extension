@@ -1,6 +1,6 @@
-# Glass Feedback
+# Glassy
 
-Glass Feedback is a Chrome extension for marking up web pages and exporting
+Glassy (published in Chrome as Glass Feedback) is an extension for marking up web pages and exporting
 the result as an image. It combines region/full-page screenshots with smart
 drawing, element outlines, and notes attached to drawings.
 
@@ -13,6 +13,9 @@ The implementation is plain JavaScript, CSS, SVG, and Canvas using
 or build step required to load the extension. The source version is
 `0.2.0`; the [Chrome Web Store](https://chromewebstore.google.com/detail/glass-feedback/kihjocbmloocaobeiaimofhpfkaheoan)
 release is managed separately.
+
+[Try the live demo](https://chriswhawkins.github.io/glass-feedback-extension/).
+For the upload ZIP and publisher steps, see [release notes](docs/UPDATE_0.2.0.md).
 
 ## Product surface
 

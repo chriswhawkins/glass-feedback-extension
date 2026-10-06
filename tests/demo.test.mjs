@@ -10,7 +10,9 @@ test("demo inline scripts parse and only advertise current tools", () => {
   assert.match(demo, /data-try="camera"/);
   assert.match(demo, /data-try="browse"/);
   assert.doesNotMatch(demo, /data-try="(?:wand|note|markup|settings)"/);
-  assert.match(demo, /Real screenshot exports need the Chrome extension/);
+  assert.match(demo, /Screenshots need the Chrome extension/);
+  assert.match(demo, /<title>Glassy —/);
+  assert.doesNotMatch(demo, /class="faq"|id="how"/);
   assert.match(demo, /preload="none"/);
   assert.doesNotMatch(demo, /<video[^>]*autoplay/);
 });
@@ -30,6 +32,17 @@ test("demo Chrome stub supports activation storage listeners", () => {
   new vm.Script(demo.match(/<script>([\s\S]*?)<\/script>/)[1]).runInContext(context);
   assert.equal(typeof context.window.chrome.storage.onChanged.addListener, "function");
   assert.doesNotThrow(() => context.window.chrome.storage.onChanged.addListener(() => {}));
+});
+
+test("hosted demo resolves bundled assets inside the repository path", async () => {
+  const context = vm.createContext({ window: {}, URL, URLSearchParams, location: {
+    href: "https://chriswhawkins.github.io/glass-feedback-extension/tools/demo.html", search: "",
+  } });
+  new vm.Script(demo.match(/<script>([\s\S]*?)<\/script>/)[1]).runInContext(context);
+  assert.match(context.window.chrome.runtime.getURL("content/content.css"),
+    /^https:\/\/chriswhawkins\.github\.io\/glass-feedback-extension\/content\/content\.css\?preview=\d+$/);
+  const index = await readFile(new URL("../tools/demo-index.html", import.meta.url), "utf8");
+  assert.match(index, /url=tools\/demo\.html/);
 });
 
 function jpegSize(buffer) {

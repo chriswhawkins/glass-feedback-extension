@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 — Unreleased
+## 0.2.0 — GitHub release; Chrome publication pending
 
 - **Branding:** Glassy's rounded liquid-glass mascot now appears in extension
   icons, the Store icon and demo; in-page tool glyphs are unchanged.
@@ -25,6 +25,8 @@
   All executable extension code is bundled; all-sites host access supports
   activation and capture. There are no runtime package dependencies.
   The README now documents architecture, runtime boundaries and development.
+- **Public demo:** concise Glassy branding, colorful live canvases and optional
+  help. GitHub Pages publishes the shared UI from main after validation.
 
 See [release readiness](docs/RELEASE_READINESS.md) for observed checks and
 remaining native/publisher gates. Nothing here asserts Store publication.

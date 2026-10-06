@@ -81,7 +81,10 @@ memory for annotations. Chrome APIs are stubbed; Camera displays an
 extension-only export notice instead of taking a real page screenshot.
 Following a Store/repository link opens that external site. Verify any public
 demo host's logs and other data practices separately before using this policy
-for that hosted site.
+for that hosted site. The public demo is hosted on GitHub Pages: GitHub records
+visitors' IP addresses for security purposes. See
+[GitHub Pages data collection](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages#data-collection).
+No developer analytics or annotation uploads are added by the demo.
 
 For privacy questions, use the
 [public issue tracker](https://github.com/chriswhawkins/glass-feedback-extension/issues).
