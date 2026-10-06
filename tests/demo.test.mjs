@@ -77,6 +77,7 @@ test("current listing images have required JPEG canvas sizes", async () => {
   for (const name of ["01-annotate-1280x800.jpg", "02-controls-1280x800.jpg", "03-camera-1280x800.jpg"])
     assert.deepEqual(jpegSize(await readFile(new URL(`../store-assets/0.2.0/${name}`, import.meta.url))), [1280, 800]);
   assert.deepEqual(jpegSize(await readFile(new URL("../store-assets/0.2.0/small-promo-440x280.jpg", import.meta.url))), [440, 280]);
+  assert.deepEqual(jpegSize(await readFile(new URL("../store-assets/0.2.0/marquee-promo-1400x560.jpg", import.meta.url))), [1400, 560]);
 });
 
 test("animated promo assets are present and use expected file formats", async () => {

@@ -23,6 +23,9 @@ current icon, three JPEG screenshots and small promo from the
 The release's separate `glass-feedback-store-assets-0.2.0.zip` contains current
 graphics, GIF and MP4. Unzip it first; do not upload it as the extension package.
 Video is optional and requires a YouTube URL; an MP4 isn't accepted in that field.
+For the **Marquee promo tile** field, use the standalone release attachment
+`marquee-promo-1400x560.jpg` (1400×560, no alpha). This is a promotional
+illustration, not one of the required product screenshots.
 
 Privacy URL: https://github.com/chriswhawkins/glass-feedback-extension/blob/main/PRIVACY.md
 
