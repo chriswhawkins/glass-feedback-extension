@@ -1,4 +1,16 @@
-# 0.2.0 readiness — 2026-10-05
+# 0.2.0 readiness — 2026-10-06
+
+## Final demo and repository handoff
+
+The October 6 pass reduces the demo to Glassy branding, compact tool controls,
+four colorful canvases and optional help. Desktop/mobile layouts and an actual
+arrow/associated-note flow were checked locally on October 5; all 80 automated
+tests pass again October 6. The rebuilt runtime ZIP has the same SHA-256 below.
+The public demo uses GitHub Pages with validation before deployment; only the
+demo and its required UI/media assets are staged. Native export gates below
+remain open. Follow [publisher update notes](UPDATE_0.2.0.md) for Store submission.
+The Store media ZIP was rebuilt October 6 to remove obsolete Wand/Settings
+stills and include the current mascot, Camera/Annotate stills, GIF and MP4.
 
 ## Final packaging pass
 

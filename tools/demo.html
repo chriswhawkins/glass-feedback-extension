@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Glass Feedback — a little glass, a lot of clarity</title>
-  <meta name="description" content="Draw an arrow. Leave a note. Try Glass Feedback's liquid-glass tools on a live playground, then bring page annotations and screenshots to Chrome.">
+  <title>Glassy — annotate, screenshot, a little glass</title>
+  <meta name="description" content="A dead-simple annotation and screenshot tool. With glass. Try Glassy on a colorful live canvas.">
   <link rel="icon" type="image/png" href="../icons/icon32.png">
   <style>
     * { box-sizing: border-box; }
@@ -18,28 +18,19 @@
     header { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; gap: 20px; }
     .brand { font-weight: 700; letter-spacing: -.04em; font-size: 21px; text-decoration: none; display: flex; align-items: center; gap: 10px; }
     .store-link { font-size: 13px; text-decoration: none; border-bottom: 1px solid #52665b66; }
-    .hero { position: relative; overflow: hidden; border-radius: 28px; min-height: 580px; padding: 76px 7%; color: #f3f6ee; background: #173c35; isolation: isolate; }
+    .hero { position: relative; overflow: hidden; border-radius: 28px; min-height: 300px; padding: 40px 7%; color: #f3f6ee; background: #173c35; isolation: isolate; }
     .hero::before { content: ""; position: absolute; inset: -35%; z-index: -1; background: radial-gradient(ellipse at 70% 40%, #bcd896aa, transparent 35%), radial-gradient(ellipse at 25% 80%, #43ab9899, transparent 42%), linear-gradient(120deg, #152d2d, #396e56); transform: rotate(-15deg); }
-    .eyebrow { margin: 0 0 20px; text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 650; }
-    h1 { max-width: 760px; font-weight: 500; font-size: clamp(48px, 7vw, 86px); line-height: 1.02; letter-spacing: -.065em; margin: 0 0 26px; }
-    h1 em { font-family: Georgia, serif; font-weight: 400; }
+    h1 { font-weight: 500; font-size: clamp(64px, 8vw, 104px); line-height: 1; letter-spacing: -.065em; margin: 0 0 14px; }
     .intro { max-width: 440px; font-size: 17px; color: #dde9dd; }
     .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 30px; }
     .cta { border: 0; padding: 13px 23px; border-radius: 40px; background: #e4efbc; color: #173c35; font-weight: 650; text-decoration: none; display: inline-block; }
-    .hero .secondary { font-size: 13px; color: #e1e9df; text-underline-offset: 4px; }
     .hero-note { font-size: 12px; color: #cfddd0; margin-top: 14px; }
-    .glassy-mascot { position: absolute; right: 24px; bottom: 10px; width: 300px; height: 300px; object-fit: contain; pointer-events: none; }
+    .glassy-mascot { position: absolute; right: 7%; bottom: 12px; width: 280px; height: 280px; object-fit: contain; pointer-events: none; }
     .glassy-tip { position: absolute; top: 28px; right: 32px; font-size: 11px; letter-spacing: .04em; color: #e1edd9; }
-    section { padding: 74px 0; }
-    .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 26px; }
+    section { padding: 38px 0; }
     h2 { font-size: clamp(28px, 4vw, 44px); line-height: 1.15; letter-spacing: -.045em; font-weight: 500; margin: 0; }
-    .section-heading p { max-width: 340px; margin: 0; color: #64716b; font-size: 13px; }
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
-    .step { border-top: 1px solid #c5cec5; padding-top: 16px; }
-    .step span { font-size: 11px; color: #698474; }
     h3 { font-size: 19px; font-weight: 550; letter-spacing: -.025em; margin: 10px 0 8px; }
-    .step p { font-size: 13px; color: #627068; margin: 0; }
-    #playground { scroll-margin-top: 25px; padding-top: 8px; }
+    #playground { scroll-margin-top: 20px; padding-top: 24px; }
     .play-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
     .panel { position: relative; min-height: 370px; border-radius: 22px; overflow: hidden; }
     .panel-label { position: absolute; top: 20px; left: 22px; z-index: 1; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
@@ -60,38 +51,28 @@
     @keyframes drift { to { transform: translateX(35px); } }
     .spectrum { color: #fff; background: radial-gradient(ellipse at 15% 20%, #ffd298, transparent 50%), radial-gradient(ellipse at 85% 80%, #a4edca, transparent 55%), linear-gradient(140deg, #e37991, #7960d7 55%, #375b9a); display: flex; align-items: center; justify-content: center; }
     .spectrum strong { font-size: clamp(65px, 9vw, 115px); line-height: .9; font-weight: 650; letter-spacing: -.075em; transform: rotate(-8deg); text-shadow: 0 8px 25px #4a3b6b22; }
-    .exercise { padding: 20px 24px; margin-top: 18px; border: 1px solid #cbd2c7; border-radius: 16px; display: flex; gap: 18px; align-items: baseline; }
-    .exercise strong { white-space: nowrap; font-size: 13px; }
-    .exercise p { margin: 0; font-size: 13px; color: #68766c; }
-    .finish { text-align: center; background: #e7ecdf; border-radius: 24px; padding: 62px 24px; margin-bottom: 28px; }
-    .finish p { max-width: 490px; margin: 20px auto; color: #627068; font-size: 14px; }
-    .finish .cta { background: #214a3d; color: #f2f6e8; }
     footer { padding: 0 0 28px; display: flex; justify-content: space-between; gap: 20px; color: #6c786f; font-size: 11px; }
     .demo-status { min-height: 24px; font-size: 12px; margin-top: 12px; }
     .demo-nav { display: flex; align-items: center; gap: 20px; font-size: 13px; }
     .demo-nav a { text-decoration: none; }
-    .version-pill { display: inline-block; padding: 5px 10px; border: 1px solid #ffffff40; border-radius: 30px; margin-bottom: 22px; font-size: 11px; }
-    .trial-dock { position: sticky; top: 12px; z-index: 5; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 20px 0 30px; padding: 10px 14px; border: 1px solid #fff; border-radius: 22px; background: #f4f3efe8; backdrop-filter: blur(16px); box-shadow: 0 8px 25px #173c3510; }
+    .trial-dock { position: sticky; top: 12px; z-index: 5; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; padding: 10px 14px; border: 1px solid #fff; border-radius: 22px; background: #f4f3efe8; backdrop-filter: blur(16px); box-shadow: 0 8px 25px #173c3510; }
     .trial-dock button { border: 1px solid #ced8cf; border-radius: 24px; padding: 7px 14px; color: #254638; background: #fffefa; font-size: 12px; }
     .trial-dock button[aria-pressed="true"] { background: #214a3d; color: #fff; border-color: #214a3d; }
     .trial-dock .demo-status { flex: 1 1 250px; margin: 0 0 0 8px; color: #56695b; line-height: 1.5; }
     .watch-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 42px; }
-    .watch-grid p, .faq p { color: #627068; font-size: 14px; }
+    .watch-grid p { color: #627068; font-size: 14px; }
     .walkthrough { width: 100%; aspect-ratio: 8 / 5; border-radius: 22px; background: #173c35; box-shadow: 0 12px 40px #173c3520; }
     .media-caption { font-size: 11px !important; margin: 12px 0 0; }
-    .keyboard-hint { display: inline-block; padding: 1px 6px; border: 1px solid #aab7ac; border-radius: 5px; font: 11px/1.7 system-ui, sans-serif; }
-    .faq { max-width: 760px; margin: auto; }
-    .faq details { border-bottom: 1px solid #c5cec5; padding: 18px 0; }
-    .faq summary { cursor: pointer; font-weight: 550; }
-    .faq summary:focus-visible { outline: 3px solid #8572df; outline-offset: 5px; }
-    .faq p { margin-bottom: 0; }
+    .quick-help { margin: 0 4px 20px; font-size: 12px; color: #627068; }
+    .quick-help summary { cursor: pointer; width: fit-content; }
+    .quick-help summary:focus-visible { outline: 3px solid #8572df; outline-offset: 5px; }
+    .quick-help p { max-width: 640px; margin: 8px 0; }
     .loading-note { min-height: 24px; font-size: 12px; }
     @media (max-width: 850px) { .watch-grid { grid-template-columns: 1fr; } .demo-nav a:not(.store-link) { display: none; } }
     @media (max-width: 700px) {
-      .wrap { width: calc(100% - 32px); } .hero { padding: 86px 28px 54px; min-height: 560px; }
-      .glassy-tip { left: 28px; right: auto; } .glassy-mascot { display: none; }
-      .steps, .play-grid { grid-template-columns: 1fr; } .section-heading, .exercise { display: block; }
-      .section-heading p { margin-top: 16px; } .exercise p { margin-top: 8px; } section { padding: 48px 0; }
+      .wrap { width: calc(100% - 32px); } .hero { padding: 48px 28px 28px; min-height: 0; }
+      .glassy-tip { top: 16px; left: 28px; right: auto; } .glassy-mascot { display: none; }
+      .play-grid { grid-template-columns: 1fr; } section { padding: 28px 0; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .landscape .cloud { animation: none; } }
   </style>
@@ -125,35 +106,26 @@
 </head>
 <body>
   <div class="wrap">
-    <header><a class="brand" href="#"><img src="../icons/icon48.png" width="28" height="28" alt="">glass feedback</a>
-      <nav class="demo-nav" aria-label="Main navigation"><a href="#how">How it works</a><a href="#watch">Watch it</a><a class="store-link" href="https://chromewebstore.google.com/detail/glass-feedback/kihjocbmloocaobeiaimofhpfkaheoan" target="_blank" rel="noopener noreferrer">Get it for Chrome ↗</a></nav></header>
+    <header><a class="brand" href="#"><img src="../icons/icon48.png" width="28" height="28" alt="">Glassy</a>
+      <nav class="demo-nav" aria-label="Main navigation"><a href="#playground">Play</a><a href="#watch">Watch</a><a class="store-link" href="https://chromewebstore.google.com/detail/glass-feedback/kihjocbmloocaobeiaimofhpfkaheoan" target="_blank" rel="noopener noreferrer">Add to Chrome ↗</a></nav></header>
     <main>
       <div class="hero">
-        <span class="glassy-tip">Drag Glassy anywhere. Make yourself at home.</span>
-        <span class="version-pill">0.2 preview · live tools, sample page</span>
-        <p class="eyebrow">Feedback with a little more feeling</p>
-        <h1>A little glass.<br>A lot of <em>clarity.</em></h1>
-        <p class="intro">Draw an arrow. Leave a thought. Capture the context. Glassy keeps your feedback on the page—and the controls out of your way.</p>
-        <div class="actions"><button class="cta" data-try="annotate" disabled>Try drawing on the page ↓</button><a class="secondary" href="#watch">See the flow first</a></div>
-        <p class="hero-note">No sign-up. Nothing to install to try drawing and notes.<br>Real screenshot exports need the Chrome extension. This is the upcoming 0.2 experience; the Store version may differ.</p>
+        <span class="glassy-tip">Pull to explore. Drag to move.</span>
+        <h1>Glassy.</h1>
+        <p class="intro">Annotate. Screenshot. A little glass.</p>
+        <div class="actions"><button class="cta" data-try="annotate" disabled>Try it ↓</button></div>
+        <p class="hero-note">Draw here. Screenshots need the Chrome extension.</p>
         <p class="loading-note" role="status">Getting Glassy ready…</p>
         <img class="glassy-mascot" src="../assets/brand/glassy-mascot-v1.png" width="300" height="300" alt="Glassy, a round liquid-glass blob with blue eyes">
       </div>
-      <section id="how">
-        <div class="section-heading"><h2>A small tool.<br>A natural flow.</h2><p>Click to see your choices, or dip into the glass and pull toward an edge. The menus grow with you.</p></div>
-        <div class="steps">
-          <article class="step"><span>01 / REVEAL</span><h3>Two modes. No clutter.</h3><p>Pull sideways for Camera or Annotate. Pull up or down for the current tool's options. Prefer a click? Click Glassy to reveal both at once. Drag the main icon to put it where you want it.</p></article>
-          <article class="step"><span>02 / MARK UP</span><h3>Draw the way you think.</h3><p>A quick line becomes an arrow. Hold briefly, then drag for a rectangle. Everything else stays a sketch. Turn on element highlighting to click a page element and outline it instead.</p></article>
-          <article class="step"><span>03 / LEAVE A THOUGHT</span><h3>The note goes with it.</h3><p>Rest your pointer on a drawing to reveal its tools. Show its note, change its color or opacity, or delete it. Type inside the note; drag its edge to move it. Press <kbd class="keyboard-hint">Esc</kbd> whenever you want to browse again.</p></article>
-        </div>
-      </section>
       <section id="playground">
-        <div class="section-heading"><h2>Your first arrow<br>belongs here.</h2><p>Pick a tool below, then try it on these sample canvases. Light, dark, movement, color: the glass has something to play with.</p></div>
-        <div class="trial-dock" role="group" aria-label="Demo tools"><button data-try="annotate" disabled aria-pressed="false">Draw & annotate</button><button data-try="camera" disabled aria-pressed="false">Try Camera</button><button data-try="browse" disabled aria-pressed="true">Browse / Esc</button><button data-reset disabled>Clear canvas</button><p class="demo-status" role="status" aria-live="polite">Getting Glassy ready…</p></div>
+        <div class="trial-dock" role="group" aria-label="Demo tools"><button data-try="annotate" disabled aria-pressed="false">Annotate</button><button data-try="camera" disabled aria-pressed="false">Camera</button><button data-try="browse" disabled aria-pressed="true">Browse / Esc</button><button data-reset disabled>Clear</button><p class="demo-status" role="status" aria-live="polite">Loading…</p></div>
+        <details class="quick-help"><summary>A few pointers</summary><p>Quick line → arrow. Hold, then drag → rectangle. Otherwise, sketch. Hover a drawing for its note, color, opacity and delete.</p><p>Pull Glassy sideways for modes; up/down for options. Or click to reveal both. Esc returns to browsing. Reload clears your marks.</p></details>
         <div class="play-grid">
-          <article class="panel editorial"><span class="panel-label">01 / Paper & type</span><h3>Good ideas<br>deserve a margin.</h3><p>A quiet canvas for a little feedback. Draw an arrow toward <span class="highlight">the part that matters.</span> Then give that arrow a note.</p><span class="panel-caption">Try: hover the arrow → show its note → type a thought.</span></article>
-          <article class="panel night"><span class="panel-label">02 / After dark · sample dashboard</span><div class="metric"><strong>24,860</strong><span>↑ 18.6% this month</span></div><div class="chart" aria-label="Illustrative bar chart"><i style="--height:28%"></i><i style="--height:45%"></i><i style="--height:35%"></i><i style="--height:62%"></i><i style="--height:52%"></i><i style="--height:78%"></i><i style="--height:65%"></i><i style="--height:92%"></i><i style="--height:84%"></i><i style="--height:100%"></i></div><span class="panel-caption">Try: circle a bar, change its color, dial down the opacity.</span></article>
-          <article class="panel landscape"><span class="panel-label">03 / Moving image · animated illustration</span>
+          <article class="panel spectrum"><span class="panel-label">Full spectrum</span><strong>Stay<br>Glassy.</strong><span class="panel-caption">A little transparency goes a long way.</span></article>
+          <article class="panel editorial"><span class="panel-label">Paper</span><h3>Make your<br>point.</h3><p>Start with <span class="highlight">this detail.</span></p><span class="panel-caption">An arrow. A note. That's it.</span></article>
+          <article class="panel night"><span class="panel-label">After dark</span><div class="metric"><strong>24,860</strong><span>↑ 18.6%</span></div><div class="chart" aria-label="Illustrative bar chart"><i style="--height:28%"></i><i style="--height:45%"></i><i style="--height:35%"></i><i style="--height:62%"></i><i style="--height:52%"></i><i style="--height:78%"></i><i style="--height:65%"></i><i style="--height:92%"></i><i style="--height:84%"></i><i style="--height:100%"></i></div><span class="panel-caption">Pick a bar. Make it stand out.</span></article>
+          <article class="panel landscape"><span class="panel-label">In motion</span>
             <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A warm sunset over layered blue mountains, with drifting clouds">
               <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#e9b9a6"/><stop offset="1" stop-color="#f2d5a5"/></linearGradient><linearGradient id="lake" x2="0" y2="1"><stop stop-color="#557d88"/><stop offset="1" stop-color="#163d54"/></linearGradient></defs>
               <path fill="url(#sky)" d="M0 0h600v400H0z"/><circle cx="440" cy="112" r="45" fill="#ffe8b8"/>
@@ -163,31 +135,22 @@
               <path fill="#315c70" d="M0 305l100-58 130 70 135-45 140 35 95-65v158H0z"/>
               <path fill="url(#lake)" d="M0 322q150-25 300 0t300 0v78H0z"/>
               <path d="M348 340h95m-135 15h155m-100 15h50" fill="none" stroke="#f0cca0" stroke-width="2" opacity=".35"/>
-            </svg><span class="panel-caption">Try: frame the sunset. Drag Glassy over the mountain ridges.</span>
+            </svg><span class="panel-caption">Frame the sunset.</span>
           </article>
-          <article class="panel spectrum"><span class="panel-label">04 / Full spectrum</span><strong>less fuss.<br>more flow.</strong><span class="panel-caption">Try: move a translucent note across the colors.</span></article>
         </div>
-        <div class="exercise"><strong>Take it for a scroll.</strong><p>Your feedback stays with the page. Press Esc to browse, scroll between canvases, then choose a demo tool or click Glassy to continue. Clear canvas starts fresh; reload also clears annotations. They aren't saved as a document.</p></div>
       </section>
       <section id="watch">
-        <div class="watch-grid"><div><p class="eyebrow">A quick look before you leap</p><h2>Less toolbar.<br>More right there.</h2><p>Watch the actual preview UI: reveal the glass, mark a detail, and add the thought behind it. Then try the same flow on the canvases above.</p><button class="cta" data-try="annotate" disabled>Make your own mark ↑</button><p class="media-caption">Recorded from this 0.2 preview. Silent, with on-screen instructions. Screenshot exports are extension-only.</p></div><video class="walkthrough" controls playsinline preload="none" poster="../store-assets/0.2.0/preview-poster.jpg" aria-label="Glass Feedback preview walkthrough"><source src="../store-assets/0.2.0/glassy-walkthrough.mp4" type="video/mp4">Your browser can't play this video. <a href="../store-assets/0.2.0/glassy-walkthrough.mp4">Download the walkthrough.</a></video></div>
+        <div class="watch-grid"><div><h2>See the flow.</h2><p>20 seconds. Then it's your turn.</p><button class="cta" data-try="annotate" disabled>Try it ↑</button><p class="media-caption">0.2 demo · Store version may differ.</p></div><video class="walkthrough" controls playsinline preload="none" poster="../store-assets/0.2.0/preview-poster.jpg" aria-label="Glassy walkthrough"><source src="../store-assets/0.2.0/glassy-walkthrough.mp4" type="video/mp4">Your browser can't play this video. <a href="../store-assets/0.2.0/glassy-walkthrough.mp4">Download the walkthrough.</a></video></div>
       </section>
-      <section class="faq" aria-labelledby="faq-heading"><h2 id="faq-heading">A little context.</h2>
-        <details><summary>What works here, and what needs the extension?</summary><p>Drawing, arrows, rectangles, element outlines, notes, colors, and opacity use the same UI source as the extension. Camera lets you try choosing and adjusting a region, but the demo cannot read other tabs, export screenshots, or copy page images. It explains that limitation instead of pretending to save an image.</p></details>
-        <details><summary>How do I get my page back?</summary><p>Press Esc, or choose Browse above. Your annotations stay visible, but the tool stops intercepting page gestures. Choose a demo tool to continue. In Chrome, the browser's extension icon turns Glass Feedback off across supported tabs.</p></details>
-        <details><summary>Does my feedback go anywhere?</summary><p>The tools process annotations locally. This demo saves tool preferences in this browser's local storage; notes and drawings last only until reload or navigation. There are no analytics or annotation uploads in this page. Choose Copy or Save in the extension when you want an image to share yourself.</p></details>
-        <details><summary>Will it work on every website?</summary><p>Chrome blocks extensions on protected pages such as the Chrome Web Store and chrome:// pages. Full-page capture scrolls and stitches the page; sticky elements can repeat and virtualized content may be incomplete. A region capture is often the simpler choice. <a href="https://github.com/chriswhawkins/glass-feedback-extension/issues" target="_blank" rel="noopener noreferrer">Report a problem with a safe sample URL.</a></p></details>
-      </section>
-      <section class="finish"><p class="eyebrow">Keep the feeling. Add the capture.</p><h2>Bring Glassy to your own pages.</h2><p>This demo lets you try the interface and annotations. Install the Chrome extension for real region and full-page screenshots, clipboard copy, and image downloads on supported pages.</p><a class="cta" href="https://chromewebstore.google.com/detail/glass-feedback/kihjocbmloocaobeiaimofhpfkaheoan" target="_blank" rel="noopener noreferrer">Get Glass Feedback for Chrome ↗</a><div class="actions" style="justify-content:center"><button class="store-link" data-try="camera" disabled style="background:none;border:0">Try the camera here</button></div></section>
     </main>
-    <footer><span>Glass Feedback · made for the details.</span><span><a href="https://github.com/chriswhawkins/glass-feedback-extension" target="_blank" rel="noopener noreferrer">Source & support</a> · <a href="https://github.com/chriswhawkins/glass-feedback-extension/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a></span></footer>
+    <footer><span>Glassy · local tools, no uploads.</span><span><a href="https://github.com/chriswhawkins/glass-feedback-extension" target="_blank" rel="noopener noreferrer">Source</a> · <a href="https://github.com/chriswhawkins/glass-feedback-extension/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer">Privacy</a> · <a href="https://chromewebstore.google.com/detail/glass-feedback/kihjocbmloocaobeiaimofhpfkaheoan" target="_blank" rel="noopener noreferrer">Add to Chrome ↗</a></span></footer>
   </div>
   <script>
     (async () => {
       const status = document.querySelector(".demo-status");
       const loading = document.querySelector(".loading-note");
       if (extensionPreview) {
-        status.textContent = "Extension playground: click Glass Feedback in Chrome's toolbar. No demo tools or API stubs are loaded.";
+        status.textContent = "Activate the extension from Chrome's toolbar.";
         loading.textContent = status.textContent;
         document.querySelector(".glassy-tip").textContent = "Activate Glassy from Chrome's toolbar →";
         document.querySelector(".trial-dock").hidden = true;
@@ -203,16 +166,17 @@
       });
       const response = await window.__fireToggle();
       window.__ready = response.ok;
-      status.textContent = response.ok ? "Choose Draw & annotate, then drag a quick line on a canvas." : "Glassy couldn't load. Refresh the page to try again.";
-      loading.textContent = response.ok ? "Glassy is ready. Your canvas is waiting below." : status.textContent;
+      status.textContent = response.ok ? "Pick a tool. Make a mark." : "Couldn't load. Try refreshing.";
+      loading.textContent = response.ok ? "" : status.textContent;
+      loading.hidden = response.ok;
       if (!response.ok) return;
       document.querySelectorAll("a, button, summary, video").forEach((control) => control.setAttribute("data-demo-control", ""));
       window.dispatchEvent(new CustomEvent("gfx-demo-mode", { detail: "browse" }));
       const showTrialState = (mode) => {
         document.querySelectorAll(".trial-dock [data-try]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.try === mode)));
-        status.textContent = mode === "camera" ? "Click Glassy for Selection / Full page. Drag a region or click for full page; export needs the extension. Esc releases the page."
-          : mode === "annotate" ? "Draw a line for an arrow; hold briefly, then drag for a rectangle. Hover a drawing for its note and tools."
-          : "Browse freely. Your marks stay visible; choose a tool when you're ready.";
+        status.textContent = mode === "camera" ? "Try a crop. Export needs the extension."
+          : mode === "annotate" ? "Draw. Hover your mark to add a note."
+          : "Pick a tool. Make a mark.";
       };
       window.addEventListener("gfx-demo-state", (event) => showTrialState(event.detail.armed ? event.detail.mode : "browse"));
       const selectTool = (mode) => {
@@ -231,7 +195,7 @@
       reset.disabled = false;
       reset.addEventListener("click", () => location.reload());
     })().catch(() => {
-      document.querySelector(".demo-status").textContent = "Glassy couldn't load. Refresh the page to try again.";
+      document.querySelector(".demo-status").textContent = "Couldn't load. Try refreshing.";
     });
   </script>
 </body>
