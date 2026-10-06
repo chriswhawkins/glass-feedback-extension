@@ -1,5 +1,7 @@
 # Glassy
 
+[![Glassy — Annotate. Screenshot. Liquid-glass mascot and annotation artwork.](store-assets/0.2.0/marquee-promo-1400x560.jpg)](https://chriswhawkins.github.io/glass-feedback-extension/)
+
 Glassy (published in Chrome as Glass Feedback) is an extension for marking up web pages and exporting
 the result as an image. It combines region/full-page screenshots with smart
 drawing, element outlines, and notes attached to drawings.
